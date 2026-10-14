@@ -50,7 +50,9 @@ public struct MainChatView: View {
 
     // Scroll States (Only visible when scrolled up away from bottom)
     @State private var showScrollToBottomButton: Bool = false
-    @State private var isAtBottom: Bool = true
+    @State private var isAutoScrollActive: Bool = true
+    @State private var isUserInteracting: Bool = false
+    @State private var lastSentMessageTime: TimeInterval = 0
 
     @FocusState private var isInputFocused: Bool
 
@@ -389,42 +391,65 @@ public struct MainChatView: View {
                         .id("BOTTOM_ANCHOR")
 
                         Color.clear
-                            .frame(height: 90)
+                            .frame(height: 120)
                     }
                     .padding(.top, 12)
                 }
                 .coordinateSpace(name: "CHAT_SCROLL_SPACE")
+                .simultaneousGesture(
+                    DragGesture(minimumDistance: 3)
+                        .onChanged { value in
+                            // The INSTANT the user touches and drags:
+                            // Immediately freeze auto-scroll so it never pulls down or jerks!
+                            if abs(value.translation.height) > 2 {
+                                isUserInteracting = true
+                                isAutoScrollActive = false
+                                if !showScrollToBottomButton {
+                                    showScrollToBottomButton = true
+                                }
+                            }
+                        }
+                )
                 .onPreferenceChange(ChatScrollOffsetKey.self) { maxY in
-                    // maxY is the Y position of the bottom anchor in the scroll view viewport.
-                    // When scrolled up, maxY is significantly greater than geometry.size.height.
-                    let isScrolledUp = maxY > (geometry.size.height + 60)
-                    isAtBottom = !isScrolledUp
-                    if showScrollToBottomButton != isScrolledUp {
-                        withAnimation(.easeInOut(duration: 0.2)) {
-                            showScrollToBottomButton = isScrolledUp
+                    let atBottom = maxY <= (geometry.size.height + 40)
+                    if atBottom && !isUserInteracting {
+                        isAutoScrollActive = true
+                        if showScrollToBottomButton {
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                showScrollToBottomButton = false
+                            }
+                        }
+                    } else if !atBottom && !isAutoScrollActive {
+                        if !showScrollToBottomButton {
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                showScrollToBottomButton = true
+                            }
                         }
                     }
                 }
                 .onChange(of: service.messages.count) { _ in
-                    // When user sends a message: smoothly scroll so that old messages are pushed UP
-                    // and the new message is comfortably placed at the top (Matching gpt.mp4 video)
+                    // When user sends a message: Push old messages UP to position new message cleanly at the top
                     if let lastUserMsg = service.messages.last(where: { $0.isUser }) {
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-                            withAnimation(.spring(response: 0.45, dampingFraction: 0.85)) {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.04) {
+                            withAnimation(.easeInOut(duration: 0.38)) {
                                 proxy.scrollTo(lastUserMsg.id, anchor: .top)
                             }
                         }
                     }
                 }
                 .onChange(of: service.messages.last?.text) { _ in
-                    // While AI streams text: ONLY auto-scroll if user is standing at the bottom!
-                    // If user scrolled up even slightly, DO NOT auto-scroll!
-                    if isAtBottom && service.isGenerating {
+                    // While AI streams text:
+                    // 1. MUST NOT be user interacting (user dragging/reading)
+                    // 2. MUST have isAutoScrollActive == true
+                    // 3. Give a 1.2s grace period right after sending so user message is NOT jerked down!
+                    let timeSinceSend = Date().timeIntervalSince1970 - lastSentMessageTime
+                    if !isUserInteracting && isAutoScrollActive && service.isGenerating && timeSinceSend > 1.2 {
                         proxy.scrollTo("BOTTOM_ANCHOR", anchor: .bottom)
                     }
                 }
                 .onChange(of: service.messages.last?.thinkingText) { _ in
-                    if isAtBottom && service.isGenerating {
+                    let timeSinceSend = Date().timeIntervalSince1970 - lastSentMessageTime
+                    if !isUserInteracting && isAutoScrollActive && service.isGenerating && timeSinceSend > 1.2 {
                         proxy.scrollTo("BOTTOM_ANCHOR", anchor: .bottom)
                     }
                 }
@@ -439,7 +464,8 @@ public struct MainChatView: View {
                     Button {
                         let haptic = UIImpactFeedbackGenerator(style: .light)
                         haptic.impactOccurred()
-                        isAtBottom = true
+                        isUserInteracting = false
+                        isAutoScrollActive = true
                         withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
                             proxy.scrollTo("BOTTOM_ANCHOR", anchor: .bottom)
                             showScrollToBottomButton = false
@@ -769,7 +795,9 @@ public struct MainChatView: View {
         if showAttachmentDrawer {
             withAnimation { showAttachmentDrawer = false }
         }
-        isAtBottom = true
+        lastSentMessageTime = Date().timeIntervalSince1970
+        isUserInteracting = false
+        isAutoScrollActive = true
         showScrollToBottomButton = false
 
         Task {

@@ -60,23 +60,19 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/heads/main') || startsWith(github.ref, 'refs/heads/master') || github.event_name == 'workflow_dispatch'
         with:
-          tag_name: v1.0.8
-          name: "khoa.ai iOS v1.0.8 (Unsigned IPA)"
+          tag_name: v1.0.9
+          name: "khoa.ai iOS v1.0.9 (Unsigned IPA)"
           body: |
-            ### 🚀 khoa.ai v1.0.8 - Cuộn mượt chuẩn Video GPT, Cài đặt tính cách AI & Xóa tất cả lịch sử
+            ### 🚀 khoa.ai v1.0.9 - Sửa lỗi giật cuộn tin nhắn & Định dạng danh sách thông minh
             Được sáng lập và phát triển bởi **Khoa Dev**.
 
-            #### ✨ Các cải tiến nổi bật trong phiên bản 1.0.8:
-            1. 🎬 **Trải nghiệm cuộn trang chuẩn xác như video ChatGPT (gpt.mp4)**:
-               - **Tự động đẩy tin nhắn cũ lên**: Khi người dùng gửi tin nhắn tiếp theo, màn hình tự động cuộn đẩy tin nhắn cũ lên trên, đưa tin nhắn mới của người dùng lên đầu màn hình với không gian thoáng đãng chờ AI phản hồi.
-               - **Tự động cuộn thông minh**: Khi người dùng ở dưới cùng đoạn chat, văn bản AI stream đến đâu tự động cuộn theo đến đó.
-               - **Bảo vệ đọc khi kéo lên**: Chỉ cần người dùng vuốt nhẹ lên trên để đọc lại tin nhắn trước, tính năng tự động cuộn sẽ lập tức dừng lại, không làm giật màn hình. Nhấn nút mũi tên xuống để trở lại đáy và kích hoạt lại tự động cuộn.
-            2. 🧠 **Cài đặt Tính cách AI & Dạy khoa.ai (AIPersonaSettingsView)**:
-               - Màn hình cài đặt mới cho phép người dùng tùy ý dạy AI cách xưng hô, văn phong hoặc kiến thức cá nhân riêng biệt.
-               - Tích hợp các gợi ý nhanh (Xưng hô em - anh, Senior Developer, Ngắn gọn trọng tâm...).
-               - Dữ liệu được lưu trữ an toàn và nạp trực tiếp vào chỉ dẫn hệ thống của DeepSeek.
-            3. 🗑️ **Nút Xóa tất cả cuộc trò chuyện trong Lịch sử**:
-               - Thêm nút xóa nhanh tiện lợi ngay tại mục Lịch sử với hộp thoại xác nhận an toàn, giúp dọn sạch các đoạn chat khi cần.
+            #### ✨ Các cải tiến nổi bật trong phiên bản 1.0.9:
+            1. 🎯 **Khắc phục triệt để lỗi giật màn hình khi gửi tin nhắn & kéo cuộn**:
+               - **Không còn bị giật giật kéo xuống**: Tích hợp nhận diện cảm ứng cử chỉ kéo (`DragGesture`) tức thì, ngay khi ngón tay chạm kéo màn hình lên thì chế độ tự động cuộn lập tức dừng hẳn 100%, bảo đảm không có hiện tượng giật giật kéo tuột màn hình xuống theo ngón tay.
+               - **Không bị nảy ngược**: Tạo độ trễ đệm 1.2s ngay sau khi gửi tin nhắn mới, giúp tin nhắn của bạn được đẩy êm ái lên vị trí trên cùng và đứng yên vững chắc tại đó trong lúc AI bắt đầu viết những dòng đầu tiên.
+            2. 📝 **Sử dụng gạch đầu dòng thông minh & đúng ngữ cảnh**:
+               - Tinh chỉnh chỉ dẫn hành văn cho AI: Khi người dùng hỏi về tính năng, khả năng ("bạn có thể làm gì"), danh mục, hoặc các bước thực hiện, AI BẮT BUỘC dùng gạch đầu dòng rõ ràng (- **Mục**: chi tiết) thay vì ép thành các đoạn văn dài khó đọc.
+               - Khi trò chuyện, đàm đạo thông thường vẫn giữ các đoạn văn tự nhiên, thông thoáng.
 
             #### ✨ Các cải tiến và sửa lỗi trong phiên bản 1.0.4:
             1. 🌐 **Web Search luôn bật mặc định**, Suy nghĩ (DeepThink) mặc định là `false`.
