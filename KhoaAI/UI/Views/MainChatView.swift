@@ -435,25 +435,37 @@ public struct MainChatView: View {
         }
     }
 
-    // MARK: - Bottom 100% Transparent Input Container (Requirement 5)
+    // MARK: - Bottom Liquid Glass Input Container
     private var bottomInputContainer: some View {
-        VStack(spacing: 8) {
-            // Attachment Preview
-            if let attachment = selectedAttachment {
-                attachmentHeaderView(attachment: attachment)
-            }
+        VStack(spacing: 10) {
+            // Main Input Capsule Card
+            VStack(spacing: 8) {
+                if let attachment = selectedAttachment {
+                    attachmentHeaderView(attachment: attachment)
+                }
 
-            inputTextFieldRow
-            inputControlsRow
+                inputTextFieldRow
+                inputControlsRow
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
+            .background {
+                RoundedRectangle(cornerRadius: 26, style: .continuous)
+                    .fill(Color.white.opacity(0.96))
+                    .background(.ultraThinMaterial)
+                    .clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 26, style: .continuous)
+                            .strokeBorder(Color.black.opacity(0.08), lineWidth: 1)
+                    )
+                    .shadow(color: Color.black.opacity(0.06), radius: 14, x: 0, y: 6)
+            }
 
             // Attachment Cards Row: Chụp ảnh, Album, Tệp
             if showAttachmentDrawer {
                 attachmentDrawerRow
             }
         }
-        .padding(.horizontal, 6)
-        .padding(.vertical, 8)
-        .background(Color.clear) // 100% TRANSPARENT ABSOLUTE per requirement 5!
     }
 
     // Attachment Thumbnail + Suggestion Chips

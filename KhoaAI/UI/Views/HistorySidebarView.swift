@@ -47,9 +47,9 @@ public struct HistorySidebarView: View {
     public var body: some View {
         GeometryReader { proxy in
             VStack(spacing: 0) {
-                // Top Safe Area Spacer
+                // Top Safe Area Spacer (Moved down a bit per user request)
                 Color.clear
-                    .frame(height: max(proxy.safeAreaInsets.top, 50))
+                    .frame(height: max(proxy.safeAreaInsets.top, 50) + 18)
 
                 // Top Capsule Search Bar (Matching Image 1 100%)
                 HStack(spacing: 8) {

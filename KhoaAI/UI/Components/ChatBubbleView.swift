@@ -272,7 +272,7 @@ struct MarkdownHeadingView: View {
     }
 }
 
-// MARK: - Markdown White Code Card with Copy Button
+// MARK: - Markdown White Code Card with Copy Button & Syntax Highlighting
 struct MarkdownCodeCard: View {
     let language: String
     let code: String
@@ -312,14 +312,10 @@ struct MarkdownCodeCard: View {
 
             Divider()
 
-            // Code Content: Smaller font size, scrollable horizontally
+            // Code Content: Smaller font size (11.5pt), Syntax Highlighting, scrollable horizontally
             ScrollView(.horizontal, showsIndicators: false) {
-                Text(code)
-                    .font(.system(size: 13, weight: .regular, design: .monospaced))
-                    .foregroundStyle(Color.black.opacity(0.9))
-                    .lineSpacing(3)
+                HighlightedCodeView(code: code)
                     .padding(14)
-                    .textSelection(.enabled)
             }
         }
         .background(Color.white)
@@ -330,6 +326,119 @@ struct MarkdownCodeCard: View {
         )
         .shadow(color: Color.black.opacity(0.04), radius: 6, x: 0, y: 3)
         .padding(.vertical, 4)
+    }
+}
+
+// MARK: - Syntax Highlighting Code View
+struct HighlightedCodeView: View {
+    let code: String
+
+    var body: some View {
+        highlightedText(for: code)
+            .lineSpacing(3.5)
+            .textSelection(.enabled)
+    }
+
+    private func highlightedText(for code: String) -> Text {
+        let lines = code.components(separatedBy: "\n")
+        var result = Text("")
+
+        for (i, line) in lines.enumerated() {
+            result = result + highlightLine(line)
+            if i < lines.count - 1 {
+                result = result + Text("\n")
+            }
+        }
+        return result
+    }
+
+    private func highlightLine(_ line: String) -> Text {
+        let trimmed = line.trimmingCharacters(in: .whitespaces)
+        // Full line comment
+        if trimmed.hasPrefix("//") || trimmed.hasPrefix("#") {
+            return Text(line)
+                .font(.system(size: 11.5, weight: .regular, design: .monospaced))
+                .foregroundColor(Color(red: 0.55, green: 0.58, blue: 0.62))
+        }
+
+        let keywords: Set<String> = [
+            "import", "func", "let", "var", "if", "else", "return", "guard", "switch", "case",
+            "default", "for", "in", "while", "class", "struct", "enum", "protocol", "extension",
+            "public", "private", "fileprivate", "internal", "open", "static", "override",
+            "self", "Self", "true", "false", "nil", "null", "def", "from", "as",
+            "try", "catch", "throw", "throws", "async", "await", "const", "function"
+        ]
+
+        let tokens = splitLineIntoTokens(line)
+        var lineText = Text("")
+
+        for token in tokens {
+            if keywords.contains(token) {
+                lineText = lineText + Text(token)
+                    .font(.system(size: 11.5, weight: .bold, design: .monospaced))
+                    .foregroundColor(Color(red: 0.65, green: 0.15, blue: 0.75)) // Purple
+            } else if (token.hasPrefix("\"") && token.hasSuffix("\"") && token.count >= 2) ||
+                      (token.hasPrefix("'") && token.hasSuffix("'") && token.count >= 2) {
+                lineText = lineText + Text(token)
+                    .font(.system(size: 11.5, weight: .regular, design: .monospaced))
+                    .foregroundColor(Color(red: 0.18, green: 0.58, blue: 0.32)) // Green string
+            } else if Double(token) != nil {
+                lineText = lineText + Text(token)
+                    .font(.system(size: 11.5, weight: .regular, design: .monospaced))
+                    .foregroundColor(Color(red: 0.85, green: 0.45, blue: 0.12)) // Orange number
+            } else if token.first?.isUppercase == true && token.count > 1 {
+                lineText = lineText + Text(token)
+                    .font(.system(size: 11.5, weight: .semibold, design: .monospaced))
+                    .foregroundColor(Color(red: 0.12, green: 0.45, blue: 0.85)) // Blue type
+            } else {
+                lineText = lineText + Text(token)
+                    .font(.system(size: 11.5, weight: .regular, design: .monospaced))
+                    .foregroundColor(Color.black.opacity(0.88))
+            }
+        }
+
+        return lineText
+    }
+
+    private func splitLineIntoTokens(_ line: String) -> [String] {
+        var tokens: [String] = []
+        var current = ""
+        var inString = false
+        var quoteChar: Character? = nil
+
+        for char in line {
+            if inString {
+                current.append(char)
+                if char == quoteChar {
+                    inString = false
+                    quoteChar = nil
+                    tokens.append(current)
+                    current = ""
+                }
+            } else if char == "\"" || char == "'" {
+                if !current.isEmpty {
+                    tokens.append(current)
+                    current = ""
+                }
+                inString = true
+                quoteChar = char
+                current.append(char)
+            } else if char.isLetter || char.isNumber || char == "_" {
+                current.append(char)
+            } else {
+                if !current.isEmpty {
+                    tokens.append(current)
+                    current = ""
+                }
+                tokens.append(String(char))
+            }
+        }
+
+        if !current.isEmpty {
+            tokens.append(current)
+        }
+
+        return tokens
     }
 }
 
@@ -393,7 +502,7 @@ struct MarkdownTableView: View {
                     // Header Row
                     HStack(spacing: 0) {
                         ForEach(headers.indices, id: \.self) { cIdx in
-                            Text(headers[cIdx])
+                            Text(LocalizedStringKey(headers[cIdx]))
                                 .font(.system(size: 14, weight: .bold))
                                 .foregroundStyle(Color.black.opacity(0.92))
                                 .padding(.horizontal, 14)
@@ -417,9 +526,13 @@ struct MarkdownTableView: View {
                         let row = rows[rIdx]
                         HStack(spacing: 0) {
                             ForEach(headers.indices, id: \.self) { cIdx in
-                                let cellText = cIdx < row.count ? row[cIdx] : ""
-                                Text(cellText)
-                                    // First column is Bold (Matching Image 2: "Thứ 2", "Thứ 3", etc.)
+                                let rawCell = cIdx < row.count ? row[cIdx] : ""
+                                // Clean ** from cell if already bolded, or let LocalizedStringKey parse **bold** natively
+                                let cellKey: LocalizedStringKey = LocalizedStringKey(
+                                    cIdx == 0 && !rawCell.contains("**") ? "**\(rawCell)**" : rawCell
+                                )
+
+                                Text(cellKey)
                                     .font(.system(size: 13.5, weight: cIdx == 0 ? .bold : .regular))
                                     .foregroundStyle(Color.black.opacity(0.9))
                                     .padding(.horizontal, 14)

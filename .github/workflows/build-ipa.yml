@@ -60,19 +60,20 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/heads/main') || startsWith(github.ref, 'refs/heads/master') || github.event_name == 'workflow_dispatch'
         with:
-          tag_name: v1.0.5
-          name: "khoa.ai iOS v1.0.5 (Unsigned IPA)"
+          tag_name: v1.0.6
+          name: "khoa.ai iOS v1.0.6 (Unsigned IPA)"
           body: |
-            ### 🚀 khoa.ai v1.0.5 - Sửa lỗi kết nối phiên chat DeepSeek (chat_session.id)
-            Được phát triển bởi **Khoa Dev**.
+            ### 🚀 khoa.ai v1.0.6 - Hoàn thiện Markdown, Tô màu Code & Tối ưu UI
+            Được sáng lập và phát triển bởi **Khoa Dev**.
 
-            - ⚡ **Khắc phục lỗi 'Định dạng phiên không hợp lệ'**: Tương thích hoàn toàn với cấu trúc phản hồi `biz_data.chat_session.id` của DeepSeek.
-            - 🌐 Web search mặc định luôn bật, DeepThink mặc định tắt.
-            - 🪟 Nền thanh nhập liệu trong suốt tuyệt đối 100%.
-            - 🎛️ Nút chọn Model và Menu trong suốt 100%, không viền bao bọc.
-            - ✉️ Nút mic/loa kế bên (+) tự động đổi thành icon Send khi gõ tin nhắn.
-            - ⬇️ Nút mũi tên cuộn xuống chỉ hiện khi cuộn lên trên, ẩn khi xuống cuối.
-            - 📜 Lịch sử chat thiết kế chuẩn 100% Ảnh 1.
+            #### ✨ Các cải tiến nổi bật trong phiên bản 1.0.6:
+            1. ⌨️ **Khôi phục khung nhập liệu chuẩn Liquid Glass**: Bo tròn mềm mại, kính mờ trắng cao cấp với bóng đổ nhẹ nhàng, nút mic tự động đổi thành icon gửi khi nhập liệu.
+            2. 📜 **Hạ thấp thanh tìm kiếm Lịch sử chat**: Tạo khoảng cách thoải mái với cạnh trên và Dynamic Island, thẩm mỹ và dễ thao tác.
+            3. 🧠 **Trả về Markdown nguyên bản DeepSeek**: Bỏ các chỉ dẫn gò bó của file dulieukhoaai.md, để AI định dạng văn bản, danh sách tự nhiên nhất, giữ vững danh tính **khoa.ai** được sáng lập bởi **Khoa Dev**.
+            4. 📊 **Sửa lỗi in đậm bảng Markdown**: Xử lý triệt để không còn hiện `** **` thô, render in đậm chuẩn SwiftUI trên tất cả các ô bảng.
+            5. 🎨 **Tô màu cú pháp Code (Syntax Highlighting) & Chữ nhỏ gọn**:
+               - Nhận diện từ khóa (tím), chuỗi text (xanh lá), số (cam), kiểu dữ liệu (xanh dương), chú thích (xám).
+               - Kích thước font chữ khối code nhỏ gọn hơn (11.5pt) giúp hiển thị nhiều dòng code rõ ràng mà không bị rối mắt.
             - 📊 Bảng biểu Markdown chuẩn 100% Ảnh 2 có thanh công cụ và in đậm cột đầu.
             - 🧠 Ghi nhớ danh tính khoa.ai tạo bởi Khoa Dev cùng toàn bộ kiến thức dulieukhoaai.md.
 
