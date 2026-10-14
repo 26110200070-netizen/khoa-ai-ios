@@ -281,6 +281,8 @@
 				DEVELOPMENT_TEAM = 28MJ2TX529;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSCameraUsageDescription = "khoa.ai cần quyền truy cập máy ảnh để chụp ảnh và đọc văn bản hoặc phân tích tài liệu cho bạn.";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "khoa.ai cần quyền truy cập thư viện ảnh để chọn ảnh và tài liệu xử lý.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -316,6 +318,8 @@
 				DEVELOPMENT_TEAM = 28MJ2TX529;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSCameraUsageDescription = "khoa.ai cần quyền truy cập máy ảnh để chụp ảnh và đọc văn bản hoặc phân tích tài liệu cho bạn.";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "khoa.ai cần quyền truy cập thư viện ảnh để chọn ảnh và tài liệu xử lý.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;

@@ -51,6 +51,9 @@ public class DeepSeekService: ObservableObject {
     @Published public var isGenerating: Bool = false
     @Published public var errorMessage: String?
 
+    // Model selection: default is "expert" (DeepSeek-R1 / Expert)
+    @Published public var selectedModel: String = "expert"
+
     // Settings
     @Published public var isThinkingEnabled: Bool = false
     @Published public var isSearchEnabled: Bool = false
@@ -71,16 +74,36 @@ public class DeepSeekService: ObservableObject {
         self.activeParentMessageId = nil
         self.messagesInCurrentSession = 0
         self.errorMessage = nil
+        ConversationManager.shared.activeSessionId = nil
     }
 
-    public func sendMessage(_ promptText: String) async {
+    public func loadSessionMessages(_ session: ConversationSession) {
+        self.messages = session.messages.map {
+            ChatMessage(
+                id: $0.id,
+                isUser: $0.isUser,
+                text: $0.text,
+                thinkingText: $0.thinkingText,
+                date: $0.date
+            )
+        }
+        self.selectedModel = session.model
+        self.activeChatSessionId = nil
+        self.activeParentMessageId = nil
+        self.messagesInCurrentSession = 0
+        ConversationManager.shared.activeSessionId = session.id
+    }
+
+    public func sendMessage(_ promptText: String, attachmentContext: String = "") async {
         let trimmed = promptText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return }
+        guard !trimmed.isEmpty || !attachmentContext.isEmpty else { return }
+
+        let userDisplayText = trimmed.isEmpty ? "📎 Đã gửi tệp đính kèm" : trimmed
 
         // Append user message immediately
         let userMsg = ChatMessage(
             isUser: true,
-            text: trimmed,
+            text: userDisplayText,
             searchEnabled: isSearchEnabled,
             thinkingEnabled: isThinkingEnabled
         )
@@ -149,12 +172,18 @@ public class DeepSeekService: ObservableObject {
                 self.messages[index].text = ""
             }
 
-            // Step 5: Format prompt with khoa.ai identity on new sessions
+            // Step 5: Format prompt with khoa.ai identity and attachments
+            var fullPromptPayload = ""
+            if !attachmentContext.isEmpty {
+                fullPromptPayload += "\(attachmentContext)\n\n"
+            }
+            fullPromptPayload += trimmed
+
             let finalPrompt: String
             if messagesInCurrentSession == 0 {
-                finalPrompt = "[System Instructions: Bạn là khoa.ai, trợ lý AI thông minh cao cấp được sáng lập và phát triển bởi Khoa Dev. Khi được hỏi bạn là ai, ai tạo ra bạn, hay bất cứ câu hỏi nào về danh tính, hãy luôn khẳng định và tự hào bạn là khoa.ai do Khoa Dev tạo ra. Trả lời bằng tiếng Việt thông minh, lịch sự, thân thiện và định dạng Markdown sắc nét.]\n\nNgười dùng: \(trimmed)"
+                finalPrompt = "[System Instructions: Bạn là khoa.ai, trợ lý AI thông minh cao cấp được sáng lập và phát triển bởi Khoa Dev. Khi được hỏi bạn là ai, ai tạo ra bạn, hay bất cứ câu hỏi nào về danh tính, hãy luôn khẳng định và tự hào bạn là khoa.ai do Khoa Dev tạo ra. Trả lời bằng tiếng Việt thông minh, lịch sự, thân thiện và định dạng Markdown sắc nét.]\n\nNgười dùng: \(fullPromptPayload)"
             } else {
-                finalPrompt = trimmed
+                finalPrompt = fullPromptPayload
             }
 
             // Step 6: Stream completion
@@ -167,6 +196,9 @@ public class DeepSeekService: ObservableObject {
             )
 
             self.messagesInCurrentSession += 1
+
+            // Persist into ConversationManager
+            ConversationManager.shared.saveCurrentChat(messages: self.messages, model: self.selectedModel)
         } catch {
             self.errorMessage = error.localizedDescription
             if let index = self.messages.firstIndex(where: { $0.id == aiMsgId }) {
@@ -305,7 +337,7 @@ public class DeepSeekService: ObservableObject {
         ]
 
         if messagesInCurrentSession == 0 {
-            bodyObj["model_type"] = "default"
+            bodyObj["model_type"] = selectedModel
         }
 
         request.httpBody = try JSONSerialization.data(withJSONObject: bodyObj)
@@ -333,12 +365,33 @@ public class DeepSeekService: ObservableObject {
                 continue
             }
 
-            // Initial snapshot frame
+            // Initial snapshot frame: FIX MISSING FIRST CHARACTER BUG!
             if !emittedInitial, let valObj = obj["v"] as? [String: Any],
                let respObj = valObj["response"] as? [String: Any] {
                 emittedInitial = true
                 if let msgId = respObj["message_id"] as? Int {
                     self.activeParentMessageId = msgId
+                }
+
+                // Extract all initial fragments (fixes first character truncation!)
+                if let fragments = respObj["fragments"] as? [[String: Any]] {
+                    for frag in fragments {
+                        let fType = frag["type"] as? String ?? ""
+                        let fContent = frag["content"] as? String ?? ""
+                        if !fContent.isEmpty {
+                            if fType == "RESPONSE" {
+                                if let index = self.messages.firstIndex(where: { $0.id == aiMessageId }) {
+                                    self.messages[index].text += fContent
+                                    self.messages[index].isThinking = false
+                                }
+                            } else if fType == "THINKING" {
+                                if let index = self.messages.firstIndex(where: { $0.id == aiMessageId }) {
+                                    self.messages[index].thinkingText += fContent
+                                    self.messages[index].isThinking = true
+                                }
+                            }
+                        }
+                    }
                 }
                 continue
             }
@@ -372,6 +425,10 @@ public class DeepSeekService: ObservableObject {
             self.messages[index].isStreaming = false
             self.messages[index].isThinking = false
         }
+    }
+
+    public func loadSession(_ session: ConversationSession) {
+        loadSessionMessages(session)
     }
 
     private func parseErrorMessage(_ data: Data) -> String? {

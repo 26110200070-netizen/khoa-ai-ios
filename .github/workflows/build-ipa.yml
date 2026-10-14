@@ -60,19 +60,25 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/heads/main') || startsWith(github.ref, 'refs/heads/master') || github.event_name == 'workflow_dispatch'
         with:
-          tag_name: v1.0.1
-          name: "khoa.ai iOS v1.0.1 (Unsigned IPA)"
+          tag_name: v1.0.2
+          name: "khoa.ai iOS v1.0.2 (Unsigned IPA)"
           body: |
-            ### 🏜️ khoa.ai v1.0.1 - Cập nhật Light UI & Khắc phục kết nối DeepSeek
+            ### 🧠 khoa.ai v1.0.2 - Logo Dây thần kinh AI, Lịch sử Chat vuốt chạm, Model Selector & Đính kèm đa phương tiện
             Được phát triển bởi **Khoa Dev**.
             
-            - ☀️ **Giao diện chuẩn Light UI**: Trắng sáng tinh khôi, hiệu ứng Liquid Glass kính nổi sắc nét, đúng chuẩn ảnh mẫu.
-            - ⬇️ **Tự động hạ thanh nhập liệu**: Chạm vào bất kỳ điểm nào trên màn hình hoặc cuộn tin nhắn để ẩn bàn phím và hạ thanh nhập liệu xuống mượt mà.
-            - ⚡ **Khắc phục kết nối & Sẵn sàng Chat**:
-              - Nhúng trực tiếp bộ giải WebAssembly `DeepSeekHashV1` vào cây hiển thị cửa sổ, không bao giờ bị treo hay chờ đợi.
-              - Tự động nạp sẵn phiên DeepSeek mẫu đã vượt AWS WAF để có thể chat ngay lập tức sau khi cài đặt.
-              - Hỗ trợ thêm tab "Nạp phiên / Token thủ công" và sửa lỗi cửa sổ popup Google OAuth.
-              - Báo cáo trạng thái theo thời gian thực (Đang kết nối, Đang giải PoW, Đang sinh câu trả lời).
+            - 🧠 **Logo Dây thần kinh mới (Neural Network & Synapses)**: Thiết kế mạng lưới nơ-ron và khớp thần kinh phát sáng công nghệ cao, cập nhật toàn diện AppIcon và biểu tượng khoa.ai.
+            - 🔀 **Chọn Model ngay cạnh icon 2 gạch**: Mặc định là **DeepSeek-R1 (Expert)**, hỗ trợ chuyển đổi nhanh sang DeepSeek-V3 (Standard).
+            - 📜 **Lịch sử cuộc trò chuyện chuẩn Video**:
+              - Bấm vào icon 2 gạch hoặc **dùng ngón tay vuốt từ mép trái sang phải** để kéo mượt mà menu lịch sử chat.
+              - Tìm kiếm nội dung chat theo từ khóa, chuyển đổi qua lại giữa các phiên và tạo đoạn hội thoại mới.
+            - 📎 **Menu đính kèm (+) dạng 3 thẻ Liquid Glass**:
+              - Bấm dấu `+` chuyển thành `✕` mở ra 3 thẻ: **[Chụp ảnh]**, **[Album]**, **[Tệp]**.
+              - Tích hợp công nghệ nhận diện chữ Apple Neural Vision OCR và trích xuất PDF/Text trực tiếp trên máy, giúp AI đọc hiểu toàn bộ tài liệu và ảnh.
+            - 🛠️ **Sửa lỗi ký tự đầu tiên**: Xử lý triệt để lỗi SSE snapshot khiến AI bị nuốt mất ký tự đầu tiên (ví dụ "ình" thành "Mình").
+            - 🎨 **Tinh chỉnh giao diện**:
+              - Bỏ chấm xanh bên dưới "Tôi có thể giúp gì cho bạn?".
+              - Nút "Tìm kiếm" (Web search) chuyển sang chỉ hiển thị Icon địa cầu tinh gọn.
+              - Nút "Suy nghĩ" giữ nguyên kích thước không còn bị co lại.
             
             #### 📱 Hướng dẫn cài đặt qua ESign:
             1. Tải file `khoa_ai.ipa` đính kèm bên dưới về iPhone.

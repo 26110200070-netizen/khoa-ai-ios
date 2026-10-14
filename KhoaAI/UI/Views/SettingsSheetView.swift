@@ -33,9 +33,9 @@ public struct SettingsSheetView: View {
                                 .font(.system(size: 13, weight: .medium))
                                 .foregroundStyle(Color.secondary)
 
-                            Text("Phong cách Liquid Glass • Sa Mạc & AI")
+                            Text("Phong cách Liquid Glass • Mạng thần kinh AI")
                                 .font(.system(size: 12))
-                                .foregroundStyle(Color.orange.opacity(0.9))
+                                .foregroundStyle(Color(red: 0.12, green: 0.45, blue: 0.95))
                         }
                     }
                     .padding(.vertical, 8)
