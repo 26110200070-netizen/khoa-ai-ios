@@ -60,25 +60,31 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/heads/main') || startsWith(github.ref, 'refs/heads/master') || github.event_name == 'workflow_dispatch'
         with:
-          tag_name: v1.0.2
-          name: "khoa.ai iOS v1.0.2 (Unsigned IPA)"
+          tag_name: v1.0.3
+          name: "khoa.ai iOS v1.0.3 (Unsigned IPA)"
           body: |
-            ### 🧠 khoa.ai v1.0.2 - Logo Dây thần kinh AI, Lịch sử Chat vuốt chạm, Model Selector & Đính kèm đa phương tiện
+            ### 🚀 khoa.ai v1.0.3 - Markdown toàn diện, Thẻ gợi ý ảnh, Hiệu ứng suy nghĩ Video & Sửa lỗi che giao diện
             Được phát triển bởi **Khoa Dev**.
             
-            - 🧠 **Logo Dây thần kinh mới (Neural Network & Synapses)**: Thiết kế mạng lưới nơ-ron và khớp thần kinh phát sáng công nghệ cao, cập nhật toàn diện AppIcon và biểu tượng khoa.ai.
-            - 🔀 **Chọn Model ngay cạnh icon 2 gạch**: Mặc định là **DeepSeek-R1 (Expert)**, hỗ trợ chuyển đổi nhanh sang DeepSeek-V3 (Standard).
-            - 📜 **Lịch sử cuộc trò chuyện chuẩn Video**:
-              - Bấm vào icon 2 gạch hoặc **dùng ngón tay vuốt từ mép trái sang phải** để kéo mượt mà menu lịch sử chat.
-              - Tìm kiếm nội dung chat theo từ khóa, chuyển đổi qua lại giữa các phiên và tạo đoạn hội thoại mới.
-            - 📎 **Menu đính kèm (+) dạng 3 thẻ Liquid Glass**:
-              - Bấm dấu `+` chuyển thành `✕` mở ra 3 thẻ: **[Chụp ảnh]**, **[Album]**, **[Tệp]**.
-              - Tích hợp công nghệ nhận diện chữ Apple Neural Vision OCR và trích xuất PDF/Text trực tiếp trên máy, giúp AI đọc hiểu toàn bộ tài liệu và ảnh.
-            - 🛠️ **Sửa lỗi ký tự đầu tiên**: Xử lý triệt để lỗi SSE snapshot khiến AI bị nuốt mất ký tự đầu tiên (ví dụ "ình" thành "Mình").
-            - 🎨 **Tinh chỉnh giao diện**:
-              - Bỏ chấm xanh bên dưới "Tôi có thể giúp gì cho bạn?".
-              - Nút "Tìm kiếm" (Web search) chuyển sang chỉ hiển thị Icon địa cầu tinh gọn.
-              - Nút "Suy nghĩ" giữ nguyên kích thước không còn bị co lại.
+            - 📑 **Hỗ trợ Markdown toàn diện**:
+              - Tiêu đề (# ## ###), in đậm, in nghiêng, trích dẫn.
+              - Kẻ bảng biểu (Tables) tự động căn chỉnh khung sắc nét.
+              - Khối code (Code Blocks) dạng thẻ trắng có nút **Sao chép**, chữ code nhỏ gọn dễ nhìn, font chữ mặc định của AI được tăng lên 17pt cho trải nghiệm đọc tối ưu.
+            - 🖼️ **Giao diện đính kèm ảnh & Gợi ý câu hỏi (Chuẩn Ảnh 2 & 3)**:
+              - Hiển thị thumbnail ảnh xem trước trong khung nhập liệu kèm nút `✕` xóa ảnh.
+              - 3 chip gợi ý nhanh: **[Đây là gì →]**, **[Phân tích →]**, **[Đề xuất giải pháp →]**. Khi người dùng gõ tin nhắn thì gợi ý tự động ẩn đi.
+              - Khi gửi, ảnh hiển thị góc phải trên tin nhắn người dùng và AI phân tích chi tiết hình ảnh thông qua Apple Vision OCR & Object/Scene Classification.
+            - 💡 **Hiệu ứng AI suy nghĩ & Nút dừng (Chuẩn Video)**:
+              - 3 chấm nảy chuyển động `• • •` khi AI đang kết nối/suy nghĩ.
+              - Khung suy nghĩ thu phóng `Suy nghĩ ᨈ` kèm vạch kẻ xám tinh tế.
+              - Nút tròn xanh dừng tạo câu trả lời (Stop) hình vuông trắng ở góc phải thanh nhập liệu khi AI đang sinh văn bản.
+            - ⬇️ **Nút mũi tên cuộn xuống (Chuẩn Ảnh 4)**:
+              - Tự động hiện icon mũi tên tròn `( ∨ )` khi người dùng cuộn lên đọc tin nhắn cũ.
+              - Không tự động cuộn giật màn hình khi AI đang chat, cho phép người dùng thoải mái đọc tin nhắn phía trên.
+            - 🛡️ **Sửa lỗi thanh lịch sử bị che tai thỏ (Chuẩn Ảnh 1)**:
+              - Tối ưu khoảng đệm Safe Area trên Dynamic Island / Notch, ô tìm kiếm và các thẻ trò chuyện hiển thị rõ ràng, không bị che khuất.
+            - 🌐 **Web search mặc định luôn bật** cho mọi câu hỏi.
+            - ✨ **Giao diện khởi đầu tối giản**: Bỏ logo, chỉ hiển thị dòng chữ chào thanh lịch.
             
             #### 📱 Hướng dẫn cài đặt qua ESign:
             1. Tải file `khoa_ai.ipa` đính kèm bên dưới về iPhone.

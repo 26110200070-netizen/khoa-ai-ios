@@ -3,7 +3,7 @@
 //  KhoaAI
 //
 //  Created by Khoa Dev.
-//  Pure Light UI Liquid Glass Chat Interface with Neural Network Logo, Model Selector, History Drawer, and Attachments.
+//  Pure Light UI Liquid Glass Chat Interface with Neural AI Vision, Full Markdown, History Drawer, and Image Suggestion Chips.
 //
 
 import SwiftUI
@@ -35,9 +35,13 @@ public struct MainChatView: View {
     @State private var isDrawerOpen: Bool = false
     @State private var dragOffset: CGFloat = 0.0
 
+    // Scroll States (Matching Image 4)
+    @State private var showScrollToBottomButton: Bool = false
+    @State private var isScrolledUp: Bool = false
+
     @FocusState private var isInputFocused: Bool
 
-    private let drawerWidth: CGFloat = min(UIScreen.main.bounds.width * 0.82, 320)
+    private let drawerWidth: CGFloat = min(UIScreen.main.bounds.width * 0.85, 320)
 
     public init() {}
 
@@ -63,7 +67,7 @@ public struct MainChatView: View {
                         }
                 }
 
-                // History Sidebar Drawer (Slides in from Left)
+                // History Sidebar Drawer (Slides in from Left, respects Safe Area)
                 HistorySidebarView(
                     isOpen: $isDrawerOpen,
                     onSelectSession: { session in
@@ -89,9 +93,9 @@ public struct MainChatView: View {
                     }
                 )
                 .frame(width: drawerWidth)
-                .background(Color(.systemBackground))
+                .background(Color(red: 0.98, green: 0.98, blue: 0.99))
                 .clipShape(RoundedRectangle(cornerRadius: isDrawerOpen ? 24 : 0, style: .continuous))
-                .shadow(color: Color.black.opacity(isDrawerOpen ? 0.2 : 0), radius: 20, x: 10, y: 0)
+                .shadow(color: Color.black.opacity(isDrawerOpen ? 0.25 : 0), radius: 24, x: 12, y: 0)
                 .offset(x: drawerCurrentOffset)
                 .ignoresSafeArea(edges: .vertical)
             }
@@ -157,10 +161,10 @@ public struct MainChatView: View {
     private var scrimOpacity: Double {
         if isDrawerOpen {
             let progress = 1.0 + Double(dragOffset / drawerWidth)
-            return max(0.0, min(0.35, 0.35 * progress))
+            return max(0.0, min(0.38, 0.38 * progress))
         } else {
             let progress = Double(dragOffset / drawerWidth)
-            return max(0.0, min(0.35, 0.35 * progress))
+            return max(0.0, min(0.38, 0.38 * progress))
         }
     }
 
@@ -180,7 +184,7 @@ public struct MainChatView: View {
     // MARK: - Main Content View
     private var mainContent: some View {
         ZStack {
-            // Pure Crisp White Light Background
+            // Crisp White Light Background
             Color.white
                 .ignoresSafeArea()
 
@@ -190,25 +194,9 @@ public struct MainChatView: View {
                 .opacity(0.01)
                 .allowsHitTesting(false)
 
-            // Subtle warm synaptic ambient light glow at top
-            VStack {
-                RadialGradient(
-                    colors: [
-                        Color(red: 0.05, green: 0.70, blue: 0.98).opacity(0.06),
-                        Color.clear
-                    ],
-                    center: .top,
-                    startRadius: 20,
-                    endRadius: 260
-                )
-                .frame(height: 280)
-                Spacer()
-            }
-            .ignoresSafeArea()
-
             // Content Stack
             VStack(spacing: 0) {
-                // Top Navigation Bar with 2-bars icon & Model Selector
+                // Top Navigation Bar
                 topBarView
                     .padding(.horizontal, 16)
                     .padding(.top, 8)
@@ -269,7 +257,7 @@ public struct MainChatView: View {
             }
             .glassCircleButton(diameter: 44)
 
-            // Select Model Menu (defaults to Expert / DeepSeek-R1)
+            // Model Selector Menu: default "expert" (DeepSeek-R1)
             Menu {
                 Button {
                     service.selectedModel = "expert"
@@ -340,6 +328,8 @@ public struct MainChatView: View {
                 haptic.impactOccurred()
                 withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
                     service.resetConversation()
+                    pickedImage = nil
+                    selectedAttachment = nil
                 }
             } label: {
                 Image(systemName: "plus")
@@ -350,120 +340,168 @@ public struct MainChatView: View {
         }
     }
 
-    // MARK: - Center Welcome View (Neural Network Logo, clean without green dot)
+    // MARK: - Center Welcome View (NO LOGO, only clean greeting per user request)
     private var centerWelcomeView: some View {
-        VStack(spacing: 24) {
-            // Neural Network & Synapse Logo for khoa.ai
-            KhoaAILogoView(size: 92, showGlow: true)
-                .onTapGesture {
-                    dismissKeyboard()
-                    let haptic = UIImpactFeedbackGenerator(style: .medium)
-                    haptic.impactOccurred()
-                }
-
-            // Headline Text matching screenshot - NO GREEN DOT UNDERNEATH
+        VStack(spacing: 12) {
             Text("Xin chào, tôi có thể giúp gì cho bạn?")
-                .font(.system(size: 22, weight: .bold, design: .rounded))
+                .font(.system(size: 23, weight: .bold, design: .rounded))
                 .multilineTextAlignment(.center)
                 .foregroundStyle(Color.black)
-                .padding(.horizontal, 28)
+                .padding(.horizontal, 32)
         }
-        .padding(.bottom, 40)
+        .padding(.bottom, 60)
         .contentShape(Rectangle())
         .onTapGesture {
             dismissKeyboard()
         }
     }
 
-    // MARK: - Chat Scroll View
+    // MARK: - Chat Scroll View with Floating Scroll-To-Bottom Arrow (Matching Image 4)
     private var chatScrollView: some View {
         ScrollViewReader { proxy in
-            ScrollView {
-                LazyVStack(spacing: 18) {
-                    ForEach(service.messages) { msg in
-                        ChatBubbleView(message: msg)
-                            .id(msg.id)
-                    }
+            ZStack(alignment: .bottomTrailing) {
+                ScrollView {
+                    LazyVStack(spacing: 16) {
+                        ForEach(service.messages) { msg in
+                            ChatBubbleView(message: msg)
+                                .id(msg.id)
+                        }
 
-                    Color.clear
-                        .frame(height: 120)
-                }
-                .padding(.top, 12)
-            }
-            .scrollDismissesKeyboard(.interactively)
-            .contentShape(Rectangle())
-            .onTapGesture {
-                dismissKeyboard()
-            }
-            .onChange(of: service.messages.last?.text) {
-                if let lastId = service.messages.last?.id {
-                    withAnimation(.easeOut(duration: 0.2)) {
-                        proxy.scrollTo(lastId, anchor: .bottom)
+                        // Invisible bottom anchor
+                        Color.clear
+                            .frame(height: 110)
+                            .id("BOTTOM_ANCHOR")
                     }
+                    .padding(.top, 12)
                 }
-            }
-            .onChange(of: service.messages.count) {
-                if let lastId = service.messages.last?.id {
-                    withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
-                        proxy.scrollTo(lastId, anchor: .bottom)
+                .scrollDismissesKeyboard(.interactively)
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    dismissKeyboard()
+                }
+
+                // Floating Scroll-To-Bottom Downward Arrow Button (Matching Image 4)
+                if service.messages.count > 1 {
+                    Button {
+                        let haptic = UIImpactFeedbackGenerator(style: .light)
+                        haptic.impactOccurred()
+                        withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
+                            proxy.scrollTo("BOTTOM_ANCHOR", anchor: .bottom)
+                        }
+                    } label: {
+                        Image(systemName: "chevron.down")
+                            .font(.system(size: 15, weight: .bold))
+                            .foregroundStyle(Color.black.opacity(0.75))
+                            .frame(width: 40, height: 40)
+                            .background(Color.white.opacity(0.96))
+                            .background(.ultraThinMaterial)
+                            .clipShape(Circle())
+                            .overlay(Circle().strokeBorder(Color.black.opacity(0.08), lineWidth: 1))
+                            .shadow(color: Color.black.opacity(0.12), radius: 8, x: 0, y: 3)
                     }
+                    .padding(.trailing, 16)
+                    .padding(.bottom, 12)
+                    .transition(.scale.combined(with: .opacity))
                 }
             }
         }
     }
 
-    // MARK: - Bottom Floating Liquid Glass Input Bar + Attachment Cards
+    // MARK: - Bottom Floating Liquid Glass Input Bar + Attachment Cards (Matching Image 2)
     private var bottomInputContainer: some View {
         VStack(spacing: 12) {
-            // The Main Pill / Card Input Container
-            VStack(spacing: 12) {
-                // If attachment is selected, show attachment chip
+            // Main Input Capsule Card
+            VStack(spacing: 10) {
+                // Attachment Thumbnail + Suggestion Chips (Matching Image 2!)
                 if let attachment = selectedAttachment {
-                    HStack(spacing: 8) {
-                        Image(systemName: attachment.isPDF ? "doc.text.fill" : "photo.fill")
-                            .foregroundStyle(Color(red: 0.12, green: 0.45, blue: 0.95))
-                            .font(.system(size: 15))
+                    VStack(alignment: .leading, spacing: 10) {
+                        // Image Thumbnail with (✕) remove button
+                        HStack {
+                            ZStack(alignment: .topTrailing) {
+                                if let img = attachment.image {
+                                    Image(uiImage: img)
+                                        .resizable()
+                                        .scaledToFill()
+                                        .frame(width: 68, height: 68)
+                                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                                .strokeBorder(Color.black.opacity(0.08), lineWidth: 1)
+                                        )
+                                } else {
+                                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                        .fill(Color(red: 0.94, green: 0.96, blue: 1.0))
+                                        .frame(width: 68, height: 68)
+                                        .overlay(
+                                            Image(systemName: "doc.text.fill")
+                                                .font(.system(size: 24))
+                                                .foregroundStyle(Color.blue)
+                                        )
+                                }
 
-                        Text(attachment.name)
-                            .font(.system(size: 13, weight: .medium))
-                            .lineLimit(1)
-                            .foregroundStyle(Color.primary)
+                                // Dark (✕) close button
+                                Button {
+                                    selectedAttachment = nil
+                                    pickedImage = nil
+                                } label: {
+                                    Image(systemName: "xmark")
+                                        .font(.system(size: 10, weight: .bold))
+                                        .foregroundStyle(Color.white)
+                                        .frame(width: 20, height: 20)
+                                        .background(Color.black.opacity(0.65))
+                                        .clipShape(Circle())
+                                }
+                                .offset(x: 5, y: -5)
+                            }
 
-                        if isProcessingAttachment {
-                            ProgressView()
-                                .scaleEffect(0.7)
-                        } else if !attachment.extractedText.isEmpty {
-                            Text("• Đã đọc nội dung")
-                                .font(.system(size: 11))
-                                .foregroundStyle(Color.secondary)
+                            if isProcessingAttachment {
+                                HStack(spacing: 6) {
+                                    ProgressView()
+                                        .scaleEffect(0.7)
+                                    Text("Đang phân tích...")
+                                        .font(.system(size: 12))
+                                        .foregroundStyle(Color.secondary)
+                                }
+                                .padding(.leading, 8)
+                            }
+
+                            Spacer()
                         }
+                        .padding(.top, 4)
 
-                        Spacer()
+                        // 3 Quick Suggestion Chips: [Đây là gì →], [Phân tích →], [Đề xuất giải pháp →]
+                        // User rule: "Khi user nhập tin nhắn thì gợi ý mất"
+                        if inputText.isEmpty {
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: 8) {
+                                    suggestionChip(title: "Đây là gì →") {
+                                        sendWithPrompt("Đây là gì")
+                                    }
 
-                        Button {
-                            selectedAttachment = nil
-                            pickedImage = nil
-                        } label: {
-                            Image(systemName: "xmark.circle.fill")
-                                .foregroundStyle(Color.secondary)
-                                .font(.system(size: 16))
+                                    suggestionChip(title: "Phân tích →") {
+                                        sendWithPrompt("Phân tích chi tiết hình ảnh này")
+                                    }
+
+                                    suggestionChip(title: "Đề xuất giải pháp →") {
+                                        sendWithPrompt("Đề xuất giải pháp dựa trên hình ảnh này")
+                                    }
+                                }
+                            }
+                            .transition(.opacity.combined(with: .move(edge: .top)))
                         }
                     }
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 7)
-                    .background(Color(red: 0.94, green: 0.97, blue: 1.0))
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .padding(.horizontal, 4)
                 }
 
-                // Upper Input Row
+                // Upper Input Row: TextField
                 HStack(alignment: .center, spacing: 10) {
-                    TextField("Nhắn tin hoặc giữ để nói", text: $inputText, axis: .vertical)
+                    TextField("Nhập tin nhắn", text: $inputText, axis: .vertical)
                         .font(.system(size: 16, weight: .regular, design: .default))
                         .foregroundStyle(Color.black)
                         .lineLimit(1...5)
                         .focused($isInputFocused)
                         .padding(.horizontal, 6)
-                        .padding(.top, 4)
+                        .padding(.top, 2)
 
                     if !inputText.isEmpty {
                         Button {
@@ -476,7 +514,7 @@ public struct MainChatView: View {
                     }
                 }
 
-                // Lower Controls Row (Matching user specifications)
+                // Lower Controls Row: [Suy nghĩ] [Tìm kiếm] (+) ((•)) (↑/■)
                 HStack(spacing: 8) {
                     // Pill 1: Suy nghĩ (DeepThink) - NOT squished, fixedSize!
                     Button {
@@ -493,9 +531,9 @@ public struct MainChatView: View {
                         }
                     }
                     .glassPill(active: service.isThinkingEnabled, accentColor: Color(red: 0.12, green: 0.45, blue: 0.95))
-                    .fixedSize(horizontal: true, vertical: false) // Prevent squishing!
+                    .fixedSize(horizontal: true, vertical: false)
 
-                    // Pill 2: Web Search - ICON ONLY!
+                    // Pill 2: Web Search - DEFAULT ACTIVE PER USER REQUEST!
                     Button {
                         let haptic = UIImpactFeedbackGenerator(style: .light)
                         haptic.impactOccurred()
@@ -503,14 +541,18 @@ public struct MainChatView: View {
                             service.isSearchEnabled.toggle()
                         }
                     } label: {
-                        Image(systemName: "globe")
-                            .font(.system(size: 15, weight: .semibold))
+                        HStack(spacing: 6) {
+                            Image(systemName: "globe")
+                                .font(.system(size: 13, weight: .semibold))
+                            Text("Tìm kiếm")
+                        }
                     }
-                    .modifier(WebSearchIconOnlyModifier(active: service.isSearchEnabled))
+                    .modifier(WebSearchPillModifier(active: service.isSearchEnabled))
+                    .fixedSize(horizontal: true, vertical: false)
 
                     Spacer()
 
-                    // Plus / Xmark Action Button (Morphs when attachment drawer is open)
+                    // Plus / Xmark Action Button
                     Button {
                         dismissKeyboard()
                         let haptic = UIImpactFeedbackGenerator(style: .light)
@@ -525,38 +567,35 @@ public struct MainChatView: View {
                     }
                     .glassCircleButton(diameter: 40)
 
-                    // Voice Waveform button or Send Button
-                    if inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && selectedAttachment == nil {
+                    // Voice Waveform button
+                    Button {
+                        dismissKeyboard()
+                        let haptic = UIImpactFeedbackGenerator(style: .medium)
+                        haptic.impactOccurred()
+                    } label: {
+                        Image(systemName: "waveform")
+                            .font(.system(size: 17, weight: .semibold))
+                            .foregroundStyle(Color.black.opacity(0.85))
+                    }
+                    .glassCircleButton(diameter: 40)
+
+                    // Send Button OR Stop Button (Matching video!)
+                    if service.isGenerating {
+                        // Stop generation button (Blue circle with white square inside)
                         Button {
-                            dismissKeyboard()
                             let haptic = UIImpactFeedbackGenerator(style: .medium)
                             haptic.impactOccurred()
+                            service.stopStreaming()
                         } label: {
-                            Image(systemName: "waveform")
-                                .font(.system(size: 17, weight: .semibold))
-                                .foregroundStyle(Color.black.opacity(0.85))
+                            Image(systemName: "stop.fill")
+                                .font(.system(size: 13, weight: .bold))
+                                .foregroundStyle(Color.white)
                         }
-                        .glassCircleButton(diameter: 40)
-                    } else {
+                        .glassCircleButton(diameter: 40, active: true)
+                    } else if !inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || selectedAttachment != nil {
+                        // Blue Send Button (↑)
                         Button {
-                            let haptic = UIImpactFeedbackGenerator(style: .medium)
-                            haptic.impactOccurred()
-                            let msg = inputText
-                            inputText = ""
-                            let attachment = selectedAttachment
-                            selectedAttachment = nil
-                            pickedImage = nil
-                            dismissKeyboard()
-                            if showAttachmentDrawer {
-                                withAnimation { showAttachmentDrawer = false }
-                            }
-                            Task {
-                                var attachmentCtx = ""
-                                if let att = attachment, !att.extractedText.isEmpty {
-                                    attachmentCtx = "[Nội dung từ tài liệu/hình ảnh đính kèm (\(att.name)):\n\(att.extractedText)]"
-                                }
-                                await service.sendMessage(msg, attachmentContext: attachmentCtx)
-                            }
+                            sendWithPrompt(inputText)
                         } label: {
                             Image(systemName: "arrow.up")
                                 .font(.system(size: 17, weight: .bold))
@@ -570,7 +609,7 @@ public struct MainChatView: View {
             .padding(.vertical, 14)
             .background {
                 RoundedRectangle(cornerRadius: 28, style: .continuous)
-                    .fill(Color.white.opacity(0.92))
+                    .fill(Color.white.opacity(0.94))
                     .background(.ultraThinMaterial)
                     .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
                     .overlay {
@@ -588,30 +627,21 @@ public struct MainChatView: View {
                     .shadow(color: Color.black.opacity(0.02), radius: 4, x: 0, y: 1)
             }
 
-            // Attachment Cards Row (Matching user image: Chụp ảnh, Album, Tệp)
+            // Attachment Cards Row: Chụp ảnh, Album, Tệp (Automatically resets after selection)
             if showAttachmentDrawer {
                 HStack(spacing: 12) {
-                    // Card 1: Chụp ảnh (Camera)
-                    attachmentCard(
-                        icon: "camera",
-                        label: "Chụp ảnh"
-                    ) {
+                    attachmentCard(icon: "camera", label: "Chụp ảnh") {
+                        withAnimation { showAttachmentDrawer = false }
                         showCameraPicker = true
                     }
 
-                    // Card 2: Album (Photo Picker)
-                    attachmentCard(
-                        icon: "photo",
-                        label: "Album"
-                    ) {
+                    attachmentCard(icon: "photo", label: "Album") {
+                        withAnimation { showAttachmentDrawer = false }
                         showPhotoPicker = true
                     }
 
-                    // Card 3: Tệp (Document Picker)
-                    attachmentCard(
-                        icon: "paperclip",
-                        label: "Tệp"
-                    ) {
+                    attachmentCard(icon: "paperclip", label: "Tệp") {
+                        withAnimation { showAttachmentDrawer = false }
                         showDocPicker = true
                     }
                 }
@@ -620,6 +650,27 @@ public struct MainChatView: View {
                     removal: .opacity.combined(with: .scale(scale: 0.95))
                 ))
             }
+        }
+    }
+
+    // Quick Suggestion Chip Builder (Matching Image 2)
+    private func suggestionChip(title: String, action: @escaping () -> Void) -> some View {
+        Button {
+            let haptic = UIImpactFeedbackGenerator(style: .light)
+            haptic.impactOccurred()
+            action()
+        } label: {
+            Text(title)
+                .font(.system(size: 13, weight: .medium, design: .rounded))
+                .foregroundStyle(Color.black.opacity(0.85))
+                .padding(.horizontal, 12)
+                .padding(.vertical, 7)
+                .background(Color(.systemGray6))
+                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .strokeBorder(Color.black.opacity(0.06), lineWidth: 1)
+                )
         }
     }
 
@@ -643,7 +694,7 @@ public struct MainChatView: View {
             .padding(.vertical, 22)
             .background {
                 RoundedRectangle(cornerRadius: 20, style: .continuous)
-                    .fill(Color.white.opacity(0.95))
+                    .fill(Color.white.opacity(0.96))
                     .background(.ultraThinMaterial)
                     .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
                     .overlay(
@@ -656,24 +707,58 @@ public struct MainChatView: View {
         .buttonStyle(.plain)
     }
 
-    // Handle Image Selection and OCR
+    // Send Message with Prompt and Attachment Context
+    private func sendWithPrompt(_ prompt: String) {
+        let msg = prompt
+        inputText = ""
+        let attachment = selectedAttachment
+        let img = pickedImage
+        selectedAttachment = nil
+        pickedImage = nil
+        dismissKeyboard()
+        if showAttachmentDrawer {
+            withAnimation { showAttachmentDrawer = false }
+        }
+
+        Task {
+            var attachmentCtx = ""
+            if let att = attachment {
+                if !att.extractedText.isEmpty {
+                    attachmentCtx += "[Văn bản nhận diện từ tài liệu/hình ảnh (\(att.name)):\n\(att.extractedText)]\n\n"
+                }
+                if !att.imageClassifications.isEmpty {
+                    attachmentCtx += "[Thông tin nhận diện hình ảnh từ Apple Vision: \(att.imageClassifications.joined(separator: ", "))]\n\n"
+                }
+            }
+            await service.sendMessage(msg, image: img, attachmentContext: attachmentCtx)
+        }
+    }
+
+    // Handle Image Selection, OCR and Classification
     private func handlePickedImage(_ image: UIImage) {
         isProcessingAttachment = true
+        withAnimation { showAttachmentDrawer = false }
         selectedAttachment = AttachedMedia(
             name: "Hình ảnh",
             image: image,
             extractedText: "",
+            imageClassifications: [],
             isPDF: false
         )
 
         Task {
-            let ocrText = await AttachmentHelper.shared.performOCR(on: image)
+            async let ocrTask = AttachmentHelper.shared.performOCR(on: image)
+            async let classifyTask = AttachmentHelper.shared.classifyImage(image: image)
+
+            let (ocrText, labels) = await (ocrTask, classifyTask)
+
             await MainActor.run {
                 if let current = selectedAttachment {
                     selectedAttachment = AttachedMedia(
                         name: current.name,
                         image: current.image,
                         extractedText: ocrText,
+                        imageClassifications: labels,
                         isPDF: false
                     )
                 }
@@ -685,6 +770,7 @@ public struct MainChatView: View {
     // Handle Document Selection and Text Extraction
     private func handlePickedDocument(url: URL) {
         isProcessingAttachment = true
+        withAnimation { showAttachmentDrawer = false }
         let filename = url.lastPathComponent
         let isPdf = url.pathExtension.lowercased() == "pdf"
 
@@ -701,6 +787,7 @@ public struct MainChatView: View {
                     name: filename,
                     image: nil,
                     extractedText: extractedText,
+                    imageClassifications: [],
                     isPDF: isPdf
                 )
                 isProcessingAttachment = false
@@ -739,27 +826,5 @@ public struct MainChatView: View {
         .onTapGesture {
             showLoginSheet = true
         }
-    }
-}
-
-// Custom Icon-Only Pill Modifier for Web Search
-struct WebSearchIconOnlyModifier: ViewModifier {
-    var active: Bool
-
-    func body(content: Content) -> some View {
-        content
-            .foregroundStyle(Color(red: 0.12, green: 0.45, blue: 0.95))
-            .frame(width: 38, height: 36)
-            .background {
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .fill(Color(red: 0.93, green: 0.96, blue: 1.0))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 18, style: .continuous)
-                            .strokeBorder(
-                                active ? Color(red: 0.12, green: 0.45, blue: 0.95).opacity(0.6) : Color(red: 0.85, green: 0.90, blue: 0.98),
-                                lineWidth: active ? 1.5 : 0.8
-                            )
-                    )
-            }
     }
 }

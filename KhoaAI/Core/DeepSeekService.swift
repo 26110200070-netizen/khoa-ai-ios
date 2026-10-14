@@ -8,11 +8,13 @@
 
 import Foundation
 import Combine
+import UIKit
 
 public struct ChatMessage: Identifiable, Equatable {
     public let id: String
     public let isUser: Bool
     public var text: String
+    public var image: UIImage?
     public var thinkingText: String
     public var isThinking: Bool
     public var isStreaming: Bool
@@ -24,6 +26,7 @@ public struct ChatMessage: Identifiable, Equatable {
         id: String = UUID().uuidString,
         isUser: Bool,
         text: String = "",
+        image: UIImage? = nil,
         thinkingText: String = "",
         isThinking: Bool = false,
         isStreaming: Bool = false,
@@ -34,6 +37,7 @@ public struct ChatMessage: Identifiable, Equatable {
         self.id = id
         self.isUser = isUser
         self.text = text
+        self.image = image
         self.thinkingText = thinkingText
         self.isThinking = isThinking
         self.isStreaming = isStreaming
@@ -54,9 +58,12 @@ public class DeepSeekService: ObservableObject {
     // Model selection: default is "expert" (DeepSeek-R1 / Expert)
     @Published public var selectedModel: String = "expert"
 
-    // Settings
-    @Published public var isThinkingEnabled: Bool = false
-    @Published public var isSearchEnabled: Bool = false
+    // Settings: Web Search is ENABLED by default per user request
+    @Published public var isThinkingEnabled: Bool = true
+    @Published public var isSearchEnabled: Bool = true
+
+    private var currentStreamSession: URLSessionDataTask?
+
 
     // Anti-ban session tracking (reuses active chat session like a human browser tab)
     private var activeChatSessionId: String?
@@ -94,16 +101,28 @@ public class DeepSeekService: ObservableObject {
         ConversationManager.shared.activeSessionId = session.id
     }
 
-    public func sendMessage(_ promptText: String, attachmentContext: String = "") async {
-        let trimmed = promptText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty || !attachmentContext.isEmpty else { return }
+    public func stopStreaming() {
+        self.isGenerating = false
+        if let lastIndex = self.messages.indices.last, !self.messages[lastIndex].isUser {
+            self.messages[lastIndex].isStreaming = false
+            self.messages[lastIndex].isThinking = false
+            if self.messages[lastIndex].text.hasPrefix("⏳") || self.messages[lastIndex].text.hasPrefix("⚡") {
+                self.messages[lastIndex].text = "Đã dừng câu trả lời."
+            }
+        }
+    }
 
-        let userDisplayText = trimmed.isEmpty ? "📎 Đã gửi tệp đính kèm" : trimmed
+    public func sendMessage(_ promptText: String, image: UIImage? = nil, attachmentContext: String = "") async {
+        let trimmed = promptText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty || !attachmentContext.isEmpty || image != nil else { return }
+
+        let userDisplayText = trimmed.isEmpty ? (image != nil ? "" : "📎 Đã gửi tệp đính kèm") : trimmed
 
         // Append user message immediately
         let userMsg = ChatMessage(
             isUser: true,
             text: userDisplayText,
+            image: image,
             searchEnabled: isSearchEnabled,
             thinkingEnabled: isThinkingEnabled
         )
@@ -114,7 +133,7 @@ public class DeepSeekService: ObservableObject {
         let aiMsg = ChatMessage(
             id: aiMsgId,
             isUser: false,
-            text: "⏳ Đang kết nối DeepSeek...",
+            text: "",
             thinkingText: "",
             isThinking: isThinkingEnabled,
             isStreaming: true,
@@ -159,18 +178,8 @@ public class DeepSeekService: ObservableObject {
             // Step 1: Ensure chat session
             let sessionId = try await ensureChatSession(session: session)
 
-            // Step 2: Update status to PoW
-            if let index = self.messages.firstIndex(where: { $0.id == aiMsgId }) {
-                self.messages[index].text = "⚡ Đang xử lý PoW challenge..."
-            }
-
-            // Step 3: Fetch and solve PoW challenge
+            // Step 2 & 3: Fetch and solve PoW challenge
             let powHeader = try await solvePoWChallenge(session: session)
-
-            // Step 4: Clear placeholder text before streaming
-            if let index = self.messages.firstIndex(where: { $0.id == aiMsgId }) {
-                self.messages[index].text = ""
-            }
 
             // Step 5: Format prompt with khoa.ai identity and attachments
             var fullPromptPayload = ""

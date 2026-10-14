@@ -18,7 +18,22 @@ public struct AttachedMedia: Identifiable, Equatable {
     public let name: String
     public let image: UIImage?
     public let extractedText: String
+    public let imageClassifications: [String]
     public let isPDF: Bool
+
+    public init(
+        name: String,
+        image: UIImage? = nil,
+        extractedText: String = "",
+        imageClassifications: [String] = [],
+        isPDF: Bool = false
+    ) {
+        self.name = name
+        self.image = image
+        self.extractedText = extractedText
+        self.imageClassifications = imageClassifications
+        self.isPDF = isPDF
+    }
 
     public static func == (lhs: AttachedMedia, rhs: AttachedMedia) -> Bool {
         lhs.id == rhs.id
@@ -51,6 +66,33 @@ public class AttachmentHelper {
             request.recognitionLevel = .accurate
             request.recognitionLanguages = ["vi-VN", "en-US"]
             request.usesLanguageCorrection = true
+
+            let handler = VNImageRequestHandler(cgImage: cgImage, options: [:])
+            DispatchQueue.global(qos: .userInitiated).async {
+                try? handler.perform([request])
+            }
+        }
+    }
+
+    // On-device Apple Vision Scene & Subject Classification
+    public func classifyImage(image: UIImage) async -> [String] {
+        guard let cgImage = image.cgImage else { return [] }
+
+        return await withCheckedContinuation { continuation in
+            let request = VNClassifyImageRequest { request, error in
+                guard error == nil,
+                      let observations = request.results as? [VNClassificationObservation] else {
+                    continuation.resume(returning: [])
+                    return
+                }
+
+                let topLabels = observations
+                    .filter { $0.confidence > 0.15 }
+                    .prefix(8)
+                    .map { $0.identifier.replacingOccurrences(of: "_", with: " ") }
+
+                continuation.resume(returning: Array(topLabels))
+            }
 
             let handler = VNImageRequestHandler(cgImage: cgImage, options: [:])
             DispatchQueue.global(qos: .userInitiated).async {

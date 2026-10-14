@@ -3,7 +3,7 @@
 //  KhoaAI
 //
 //  Created by Khoa Dev.
-//  Chat history sidebar drawer matching reference video with search, session switching, and new chat actions.
+//  Chat history sidebar drawer matching user Image 1 with safe-area spacing, search, session cards, and profile bar.
 //
 
 import SwiftUI
@@ -41,165 +41,182 @@ public struct HistorySidebarView: View {
     }
 
     public var body: some View {
-        VStack(spacing: 0) {
-            // Top Section: Search Bar & New Chat Button
-            VStack(spacing: 12) {
-                // Search Input
-                HStack(spacing: 8) {
-                    Image(systemName: "magnifyingglass")
-                        .foregroundStyle(Color.secondary)
-                        .font(.system(size: 14))
+        GeometryReader { proxy in
+            VStack(spacing: 0) {
+                // Top Safe Area Spacer to prevent Dynamic Island overlap (Fixing Image 1 bug!)
+                Color.clear
+                    .frame(height: max(proxy.safeAreaInsets.top, 48))
 
-                    TextField("Tìm kiếm nội dung trò chuyện...", text: $searchText)
-                        .font(.system(size: 14))
-
-                    if !searchText.isEmpty {
-                        Button {
-                            searchText = ""
-                        } label: {
-                            Image(systemName: "xmark.circle.fill")
-                                .foregroundStyle(Color.secondary)
-                                .font(.system(size: 14))
-                        }
-                    }
-                }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 9)
-                .background(Color(.systemBackground))
-                .clipShape(RoundedRectangle(cornerRadius: 12))
-                .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(Color.black.opacity(0.06), lineWidth: 1))
-
-                // New Chat Button
-                Button {
-                    let haptic = UIImpactFeedbackGenerator(style: .medium)
-                    haptic.impactOccurred()
-                    onNewChat()
-                    withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
-                        isOpen = false
-                    }
-                } label: {
+                // Top Search Box & New Chat Button
+                VStack(spacing: 12) {
+                    // Search Bar (Matching Image 1)
                     HStack(spacing: 8) {
-                        Image(systemName: "square.and.pencil")
-                            .font(.system(size: 14, weight: .semibold))
-                        Text("Cuộc trò chuyện mới")
-                            .font(.system(size: 14, weight: .semibold))
-                        Spacer()
-                    }
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 10)
-                    .background(Color(red: 0.12, green: 0.45, blue: 0.95))
-                    .foregroundStyle(Color.white)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                    .shadow(color: Color.blue.opacity(0.2), radius: 6, x: 0, y: 3)
-                }
-            }
-            .padding(.horizontal, 16)
-            .padding(.top, 16)
-            .padding(.bottom, 12)
+                        Image(systemName: "magnifyingglass")
+                            .foregroundStyle(Color.secondary.opacity(0.8))
+                            .font(.system(size: 14))
 
-            Divider()
+                        TextField("Tìm kiếm nội dung trò chuyện...", text: $searchText)
+                            .font(.system(size: 14, weight: .regular))
+                            .foregroundStyle(Color.black)
 
-            // Middle: Conversations List or Empty State (Matching Video Frame 1)
-            if filteredSessions.isEmpty {
-                Spacer()
-                VStack(spacing: 14) {
-                    Image(systemName: "bubble.left.and.bubble.right")
-                        .font(.system(size: 40))
-                        .foregroundStyle(Color.secondary.opacity(0.45))
-
-                    Text("Chưa có cuộc trò chuyện nào")
-                        .font(.system(size: 16, weight: .semibold, design: .rounded))
-                        .foregroundStyle(Color.primary)
-
-                    Text("Các cuộc trò chuyện của bạn với khoa.ai sẽ hiển thị tại đây.")
-                        .font(.system(size: 13))
-                        .foregroundStyle(Color.secondary)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 32)
-                }
-                Spacer()
-            } else {
-                ScrollView {
-                    LazyVStack(spacing: 4) {
-                        ForEach(filteredSessions) { session in
-                            HStack {
-                                Button {
-                                    let haptic = UIImpactFeedbackGenerator(style: .light)
-                                    haptic.impactOccurred()
-                                    onSelectSession(session)
-                                    withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
-                                        isOpen = false
-                                    }
-                                } label: {
-                                    VStack(alignment: .leading, spacing: 3) {
-                                        Text(session.title)
-                                            .font(.system(size: 14, weight: .medium))
-                                            .foregroundStyle(Color.primary)
-                                            .lineLimit(1)
-
-                                        Text(session.updatedAt, style: .date)
-                                            .font(.system(size: 11))
-                                            .foregroundStyle(Color.secondary)
-                                    }
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                }
-
-                                Button {
-                                    conversationManager.deleteSession(session)
-                                } label: {
-                                    Image(systemName: "trash")
-                                        .font(.system(size: 12))
-                                        .foregroundStyle(Color.secondary.opacity(0.6))
-                                }
-                                .padding(.leading, 6)
+                        if !searchText.isEmpty {
+                            Button {
+                                searchText = ""
+                            } label: {
+                                Image(systemName: "xmark.circle.fill")
+                                    .foregroundStyle(Color.secondary.opacity(0.6))
+                                    .font(.system(size: 14))
                             }
-                            .padding(.horizontal, 14)
-                            .padding(.vertical, 10)
-                            .background(conversationManager.activeSessionId == session.id ? Color.blue.opacity(0.08) : Color.clear)
-                            .clipShape(RoundedRectangle(cornerRadius: 10))
                         }
                     }
-                    .padding(.horizontal, 10)
-                    .padding(.top, 8)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 10)
+                    .background(Color.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .strokeBorder(Color.black.opacity(0.08), lineWidth: 1)
+                    )
+
+                    // Blue New Chat Button (Matching Image 1)
+                    Button {
+                        let haptic = UIImpactFeedbackGenerator(style: .medium)
+                        haptic.impactOccurred()
+                        onNewChat()
+                        withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
+                            isOpen = false
+                        }
+                    } label: {
+                        HStack(spacing: 10) {
+                            Image(systemName: "square.and.pencil")
+                                .font(.system(size: 15, weight: .semibold))
+                            Text("Cuộc trò chuyện mới")
+                                .font(.system(size: 15, weight: .semibold))
+                            Spacer()
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
+                        .background(Color(red: 0.12, green: 0.45, blue: 0.95))
+                        .foregroundStyle(Color.white)
+                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                        .shadow(color: Color.blue.opacity(0.2), radius: 6, x: 0, y: 3)
+                    }
                 }
+                .padding(.horizontal, 16)
+                .padding(.bottom, 12)
+
+                Divider()
+                    .padding(.horizontal, 16)
+
+                // Middle Section: Chat Sessions List (Matching Image 1)
+                if filteredSessions.isEmpty {
+                    Spacer()
+                    VStack(spacing: 12) {
+                        Image(systemName: "bubble.left.and.bubble.right")
+                            .font(.system(size: 38))
+                            .foregroundStyle(Color.secondary.opacity(0.3))
+
+                        Text("Chưa có cuộc trò chuyện nào")
+                            .font(.system(size: 15, weight: .semibold, design: .rounded))
+                            .foregroundStyle(Color.secondary)
+
+                        Text("Bấm vào 'Cuộc trò chuyện mới' ở trên để bắt đầu nhắn tin với khoa.ai.")
+                            .font(.system(size: 12))
+                            .foregroundStyle(Color.secondary.opacity(0.8))
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 28)
+                    }
+                    Spacer()
+                } else {
+                    ScrollView {
+                        LazyVStack(spacing: 8) {
+                            ForEach(filteredSessions) { session in
+                                HStack {
+                                    Button {
+                                        let haptic = UIImpactFeedbackGenerator(style: .light)
+                                        haptic.impactOccurred()
+                                        onSelectSession(session)
+                                        withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
+                                            isOpen = false
+                                        }
+                                    } label: {
+                                        VStack(alignment: .leading, spacing: 4) {
+                                            Text(session.title.isEmpty ? "Cuộc trò chuyện" : session.title)
+                                                .font(.system(size: 15, weight: .semibold))
+                                                .foregroundStyle(Color.black.opacity(0.9))
+                                                .lineLimit(1)
+
+                                            Text(session.updatedAt, style: .date)
+                                                .font(.system(size: 12))
+                                                .foregroundStyle(Color.secondary)
+                                        }
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                    }
+
+                                    Button {
+                                        let haptic = UIImpactFeedbackGenerator(style: .medium)
+                                        haptic.impactOccurred()
+                                        conversationManager.deleteSession(session)
+                                    } label: {
+                                        Image(systemName: "trash")
+                                            .font(.system(size: 13))
+                                            .foregroundStyle(Color.secondary.opacity(0.65))
+                                    }
+                                    .padding(.leading, 8)
+                                }
+                                .padding(.horizontal, 14)
+                                .padding(.vertical, 12)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                        .fill(Color(red: 0.93, green: 0.96, blue: 1.0))
+                                )
+                            }
+                        }
+                        .padding(.horizontal, 14)
+                        .padding(.top, 12)
+                    }
+                }
+
+                Divider()
+
+                // Bottom Profile Bar (Matching Image 1)
+                HStack(spacing: 12) {
+                    KhoaAILogoView(size: 34, showGlow: false)
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(authManager.userEmail.isEmpty ? "nob******82@gmail.com" : authManager.userEmail)
+                            .font(.system(size: 13, weight: .bold))
+                            .foregroundStyle(Color.black)
+                            .lineLimit(1)
+
+                        Text("Tạo bởi Khoa Dev")
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundStyle(Color.secondary)
+                    }
+
+                    Spacer()
+
+                    Button {
+                        onOpenSettings()
+                    } label: {
+                        Image(systemName: "ellipsis")
+                            .font(.system(size: 15, weight: .bold))
+                            .foregroundStyle(Color.black.opacity(0.7))
+                            .frame(width: 34, height: 34)
+                            .background(Color.white)
+                            .clipShape(Circle())
+                            .overlay(Circle().strokeBorder(Color.black.opacity(0.08), lineWidth: 1))
+                            .shadow(color: Color.black.opacity(0.04), radius: 3, x: 0, y: 1)
+                    }
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 14)
+                .background(Color(red: 0.97, green: 0.98, blue: 0.99))
+                .padding(.bottom, max(proxy.safeAreaInsets.bottom, 12))
             }
-
-            Divider()
-
-            // Bottom Section: Account info & Settings
-            HStack(spacing: 12) {
-                KhoaAILogoView(size: 34, showGlow: false)
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(authManager.userEmail.isEmpty ? "khoa.ai DeepSeek" : authManager.userEmail)
-                        .font(.system(size: 13, weight: .semibold))
-                        .lineLimit(1)
-
-                    Text("Tạo bởi Khoa Dev")
-                        .font(.system(size: 11))
-                        .foregroundStyle(Color.secondary)
-                }
-
-                Spacer()
-
-                Button {
-                    onOpenSettings()
-                } label: {
-                    Image(systemName: "ellipsis")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundStyle(Color.primary.opacity(0.75))
-                        .frame(width: 34, height: 34)
-                        .background(Color(.systemBackground))
-                        .clipShape(Circle())
-                        .overlay(Circle().strokeBorder(Color.black.opacity(0.08), lineWidth: 1))
-                }
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
-            .background(Color(.systemGray6).opacity(0.8))
         }
-        .frame(maxWidth: 300)
-        .background(Color(red: 0.96, green: 0.97, blue: 0.98))
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color(red: 0.98, green: 0.98, blue: 0.99))
         .ignoresSafeArea(.all, edges: .vertical)
     }
 }
