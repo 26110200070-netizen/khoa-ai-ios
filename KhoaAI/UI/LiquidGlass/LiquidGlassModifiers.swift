@@ -204,6 +204,10 @@ public extension View {
         modifier(LiquidGlassStyle(cornerRadius: 24, tint: style))
     }
 
+    func actionIcon(font: Font = .title2) -> some View {
+        self.font(font)
+    }
+
     func glassEffectID(_ id: String, in namespace: Namespace.ID) -> some View {
         self.matchedGeometryEffect(id: id, in: namespace)
     }

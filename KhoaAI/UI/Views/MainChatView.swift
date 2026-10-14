@@ -120,7 +120,7 @@ public struct MainChatView: View {
                 withAnimation { isMutedAudio.toggle() }
             } label: {
                 Image(systemName: isMutedAudio ? "speaker.slash" : "speaker.wave.2")
-                    .actionIcon(font: .system(size: 18, weight: .semibold))
+                    .font(.system(size: 18, weight: .semibold))
             }
             .glassCircleButton(diameter: 46)
 
@@ -133,7 +133,7 @@ public struct MainChatView: View {
                 }
             } label: {
                 Image(systemName: "plus")
-                    .actionIcon(font: .system(size: 18, weight: .semibold))
+                    .font(.system(size: 18, weight: .semibold))
             }
             .glassCircleButton(diameter: 46)
         }
@@ -198,14 +198,14 @@ public struct MainChatView: View {
                 }
                 .padding(.top, 12)
             }
-            .onChange(of: service.messages.last?.text) { _ in
+            .onChange(of: service.messages.last?.text) {
                 if let lastId = service.messages.last?.id {
                     withAnimation(.easeOut(duration: 0.2)) {
                         proxy.scrollTo(lastId, anchor: .bottom)
                     }
                 }
             }
-            .onChange(of: service.messages.count) { _ in
+            .onChange(of: service.messages.count) {
                 if let lastId = service.messages.last?.id {
                     withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
                         proxy.scrollTo(lastId, anchor: .bottom)
