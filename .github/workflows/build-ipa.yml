@@ -60,32 +60,33 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/heads/main') || startsWith(github.ref, 'refs/heads/master') || github.event_name == 'workflow_dispatch'
         with:
-          tag_name: v1.0.3
-          name: "khoa.ai iOS v1.0.3 (Unsigned IPA)"
+          tag_name: v1.0.4
+          name: "khoa.ai iOS v1.0.4 (Unsigned IPA)"
           body: |
-            ### 🚀 khoa.ai v1.0.3 - Markdown toàn diện, Thẻ gợi ý ảnh, Hiệu ứng suy nghĩ Video & Sửa lỗi che giao diện
+            ### 🚀 khoa.ai v1.0.4 - Cập nhật giao diện Liquid Glass chuẩn 100% & Khắc phục lỗi
+
             Được phát triển bởi **Khoa Dev**.
-            
-            - 📑 **Hỗ trợ Markdown toàn diện**:
-              - Tiêu đề (# ## ###), in đậm, in nghiêng, trích dẫn.
-              - Kẻ bảng biểu (Tables) tự động căn chỉnh khung sắc nét.
-              - Khối code (Code Blocks) dạng thẻ trắng có nút **Sao chép**, chữ code nhỏ gọn dễ nhìn, font chữ mặc định của AI được tăng lên 17pt cho trải nghiệm đọc tối ưu.
-            - 🖼️ **Giao diện đính kèm ảnh & Gợi ý câu hỏi (Chuẩn Ảnh 2 & 3)**:
-              - Hiển thị thumbnail ảnh xem trước trong khung nhập liệu kèm nút `✕` xóa ảnh.
-              - 3 chip gợi ý nhanh: **[Đây là gì →]**, **[Phân tích →]**, **[Đề xuất giải pháp →]**. Khi người dùng gõ tin nhắn thì gợi ý tự động ẩn đi.
-              - Khi gửi, ảnh hiển thị góc phải trên tin nhắn người dùng và AI phân tích chi tiết hình ảnh thông qua Apple Vision OCR & Object/Scene Classification.
-            - 💡 **Hiệu ứng AI suy nghĩ & Nút dừng (Chuẩn Video)**:
-              - 3 chấm nảy chuyển động `• • •` khi AI đang kết nối/suy nghĩ.
-              - Khung suy nghĩ thu phóng `Suy nghĩ ᨈ` kèm vạch kẻ xám tinh tế.
-              - Nút tròn xanh dừng tạo câu trả lời (Stop) hình vuông trắng ở góc phải thanh nhập liệu khi AI đang sinh văn bản.
-            - ⬇️ **Nút mũi tên cuộn xuống (Chuẩn Ảnh 4)**:
-              - Tự động hiện icon mũi tên tròn `( ∨ )` khi người dùng cuộn lên đọc tin nhắn cũ.
-              - Không tự động cuộn giật màn hình khi AI đang chat, cho phép người dùng thoải mái đọc tin nhắn phía trên.
-            - 🛡️ **Sửa lỗi thanh lịch sử bị che tai thỏ (Chuẩn Ảnh 1)**:
-              - Tối ưu khoảng đệm Safe Area trên Dynamic Island / Notch, ô tìm kiếm và các thẻ trò chuyện hiển thị rõ ràng, không bị che khuất.
-            - 🌐 **Web search mặc định luôn bật** cho mọi câu hỏi.
-            - ✨ **Giao diện khởi đầu tối giản**: Bỏ logo, chỉ hiển thị dòng chữ chào thanh lịch.
-            
+
+            #### ✨ Các cải tiến và sửa lỗi trong phiên bản 1.0.4:
+            1. 🌐 **Web Search luôn bật mặc định**, Suy nghĩ (DeepThink) mặc định là `false`.
+            2. ✉️ **Chuyển đổi nút nhập liệu**:
+               - Khi người dùng nhập tin nhắn hoặc đính kèm ảnh/tệp, icon mic/loa kế bên icon `(+)` tự động biến đổi mượt mà thành icon Gửi `(↑)`.
+               - Bỏ hoàn toàn dấu `(X)` trên thanh nhập liệu.
+            3. ⬇️ **Nút mũi tên cuộn xuống thông minh**: Chỉ hiển thị khi người dùng cuộn lên trên xem lại tin nhắn; khi cuộn xuống tới đáy thì lập tức tự động ẩn.
+            4. ⚡ **Khắc phục triệt để lỗi mất ký tự đầu tiên**: Xử lý toàn diện mọi định dạng chunk SSE và snapshot payload từ DeepSeek mà không bỏ sót bất kỳ ký tự nào.
+            5. 🪟 **Khung nền thanh nhập liệu trong suốt tuyệt đối 100%**: Loại bỏ hoàn toàn mảng nền trắng/mờ, mang lại vẻ đẹp Liquid Glass tối giản, tinh khiết.
+            6. 🎛️ **Nút chọn Model và Menu trong suốt 100%**: Không còn khung bao bọc / capsule thừa, icon hai gạch và nhãn Model hiển thị liền mạch với giao diện.
+            7. 📖 **Giãn dòng hiển thị văn bản AI thoáng đãng**: Tăng độ giãn dòng chuẩn `lineSpacing(6.5)` và khoảng cách đoạn văn thoáng mát như các AI hiện đại, không còn bị dính sát vào nhau.
+            8. 📜 **Giao diện Lịch sử trò chuyện chuẩn 100% Ảnh 1**:
+               - Thanh tìm kiếm dạng Capsule bo tròn mềm mại `"Tìm kiếm nội dung trò chu..."`.
+               - Tiêu đề mục `"Hôm nay"` kèm biểu tượng bộ lọc `slider.horizontal.2`.
+               - Thẻ trò chuyện bo góc mềm mại màu xanh nhạt `[ Chào hỏi   ••• ]`.
+               - Thanh hồ sơ đáy với avatar tím tròn `[A] Alo khoa   •••`.
+            9. 📊 **Render bảng biểu Markdown chuẩn 100% Ảnh 2**:
+               - Thẻ bảng trắng viền mảnh sắc nét, thanh công cụ đầu bảng `[ Bảng   􀉁  􀈂  􀅊 ]` (sao chép bảng, tải xuống, mở rộng).
+               - Cột đầu tiên (`Ngày`: Thứ 2, Thứ 3...) được in đậm rõ ràng, các cột còn lại hiển thị chữ chuẩn, lưới bảng mỏng và hỗ trợ cuộn ngang linh hoạt.
+            10. 🧠 **Học dữ liệu quy chuẩn từ dulieukhoaai.md**: Tiếp thu kiến thức chuẩn mực về văn phong, cách trình bày, sự thông tuệ, văn minh và an toàn; luôn kiên định với danh tính là **khoa.ai** do **Khoa Dev** sáng tạo và phát triển.
+
             #### 📱 Hướng dẫn cài đặt qua ESign:
             1. Tải file `khoa_ai.ipa` đính kèm bên dưới về iPhone.
             2. Mở ứng dụng **ESign** trên máy.

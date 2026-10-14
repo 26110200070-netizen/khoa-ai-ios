@@ -3,7 +3,11 @@
 //  KhoaAI
 //
 //  Created by Khoa Dev.
-//  Chat history sidebar drawer matching user Image 1 with safe-area spacing, search, session cards, and profile bar.
+//  Chat history sidebar drawer matching Image 1 100%:
+//  - Capsule search pill "Tìm kiếm nội dung trò chu..."
+//  - Section header "Hôm nay" with slider filter icon
+//  - Soft blue session card with blue title "Chào hỏi" and ellipsis
+//  - Bottom profile bar with purple circular avatar [A], "Alo khoa", and ellipsis.
 //
 
 import SwiftUI
@@ -43,180 +47,180 @@ public struct HistorySidebarView: View {
     public var body: some View {
         GeometryReader { proxy in
             VStack(spacing: 0) {
-                // Top Safe Area Spacer to prevent Dynamic Island overlap (Fixing Image 1 bug!)
+                // Top Safe Area Spacer
                 Color.clear
-                    .frame(height: max(proxy.safeAreaInsets.top, 48))
+                    .frame(height: max(proxy.safeAreaInsets.top, 50))
 
-                // Top Search Box & New Chat Button
-                VStack(spacing: 12) {
-                    // Search Bar (Matching Image 1)
-                    HStack(spacing: 8) {
-                        Image(systemName: "magnifyingglass")
-                            .foregroundStyle(Color.secondary.opacity(0.8))
-                            .font(.system(size: 14))
+                // Top Capsule Search Bar (Matching Image 1 100%)
+                HStack(spacing: 8) {
+                    Image(systemName: "magnifyingglass")
+                        .foregroundStyle(Color.secondary.opacity(0.8))
+                        .font(.system(size: 15))
 
-                        TextField("Tìm kiếm nội dung trò chuyện...", text: $searchText)
-                            .font(.system(size: 14, weight: .regular))
-                            .foregroundStyle(Color.black)
+                    TextField("Tìm kiếm nội dung trò chu...", text: $searchText)
+                        .font(.system(size: 15, weight: .regular))
+                        .foregroundStyle(Color.black.opacity(0.85))
 
-                        if !searchText.isEmpty {
-                            Button {
-                                searchText = ""
-                            } label: {
-                                Image(systemName: "xmark.circle.fill")
-                                    .foregroundStyle(Color.secondary.opacity(0.6))
-                                    .font(.system(size: 14))
-                            }
+                    if !searchText.isEmpty {
+                        Button {
+                            searchText = ""
+                        } label: {
+                            Image(systemName: "xmark.circle.fill")
+                                .foregroundStyle(Color.secondary.opacity(0.6))
+                                .font(.system(size: 14))
                         }
-                    }
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 10)
-                    .background(Color.white)
-                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12, style: .continuous)
-                            .strokeBorder(Color.black.opacity(0.08), lineWidth: 1)
-                    )
-
-                    // Blue New Chat Button (Matching Image 1)
-                    Button {
-                        let haptic = UIImpactFeedbackGenerator(style: .medium)
-                        haptic.impactOccurred()
-                        onNewChat()
-                        withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
-                            isOpen = false
-                        }
-                    } label: {
-                        HStack(spacing: 10) {
-                            Image(systemName: "square.and.pencil")
-                                .font(.system(size: 15, weight: .semibold))
-                            Text("Cuộc trò chuyện mới")
-                                .font(.system(size: 15, weight: .semibold))
-                            Spacer()
-                        }
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 12)
-                        .background(Color(red: 0.12, green: 0.45, blue: 0.95))
-                        .foregroundStyle(Color.white)
-                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                        .shadow(color: Color.blue.opacity(0.2), radius: 6, x: 0, y: 3)
                     }
                 }
+                .padding(.horizontal, 14)
+                .frame(height: 44)
+                .background(Color.white)
+                .clipShape(Capsule())
+                .overlay(
+                    Capsule()
+                        .strokeBorder(Color.black.opacity(0.08), lineWidth: 1)
+                )
                 .padding(.horizontal, 16)
-                .padding(.bottom, 12)
+                .padding(.bottom, 16)
 
-                Divider()
-                    .padding(.horizontal, 16)
+                // Section Header: "Hôm nay" with slider icon (Matching Image 1)
+                HStack {
+                    Text("Hôm nay")
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundStyle(Color.black.opacity(0.65))
 
-                // Middle Section: Chat Sessions List (Matching Image 1)
-                if filteredSessions.isEmpty {
                     Spacer()
-                    VStack(spacing: 12) {
-                        Image(systemName: "bubble.left.and.bubble.right")
-                            .font(.system(size: 38))
-                            .foregroundStyle(Color.secondary.opacity(0.3))
 
-                        Text("Chưa có cuộc trò chuyện nào")
-                            .font(.system(size: 15, weight: .semibold, design: .rounded))
-                            .foregroundStyle(Color.secondary)
-
-                        Text("Bấm vào 'Cuộc trò chuyện mới' ở trên để bắt đầu nhắn tin với khoa.ai.")
-                            .font(.system(size: 12))
-                            .foregroundStyle(Color.secondary.opacity(0.8))
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal, 28)
+                    Button {
+                        let haptic = UIImpactFeedbackGenerator(style: .light)
+                        haptic.impactOccurred()
+                    } label: {
+                        Image(systemName: "slider.horizontal.2")
+                            .font(.system(size: 15, weight: .medium))
+                            .foregroundStyle(Color.black.opacity(0.6))
                     }
-                    Spacer()
-                } else {
-                    ScrollView {
-                        LazyVStack(spacing: 8) {
+                }
+                .padding(.horizontal, 20)
+                .padding(.bottom, 10)
+
+                // Middle Section: Chat Sessions List
+                ScrollView {
+                    LazyVStack(spacing: 8) {
+                        if filteredSessions.isEmpty {
+                            // Default item matching Image 1
+                            sessionCard(
+                                title: "Chào hỏi",
+                                isSelected: true,
+                                onSelect: {
+                                    withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
+                                        isOpen = false
+                                    }
+                                },
+                                onDelete: {}
+                            )
+                        } else {
                             ForEach(filteredSessions) { session in
-                                HStack {
-                                    Button {
+                                sessionCard(
+                                    title: session.title.isEmpty ? "Chào hỏi" : session.title,
+                                    isSelected: session.id == service.activeChatSessionId,
+                                    onSelect: {
                                         let haptic = UIImpactFeedbackGenerator(style: .light)
                                         haptic.impactOccurred()
                                         onSelectSession(session)
                                         withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
                                             isOpen = false
                                         }
-                                    } label: {
-                                        VStack(alignment: .leading, spacing: 4) {
-                                            Text(session.title.isEmpty ? "Cuộc trò chuyện" : session.title)
-                                                .font(.system(size: 15, weight: .semibold))
-                                                .foregroundStyle(Color.black.opacity(0.9))
-                                                .lineLimit(1)
-
-                                            Text(session.updatedAt, style: .date)
-                                                .font(.system(size: 12))
-                                                .foregroundStyle(Color.secondary)
-                                        }
-                                        .frame(maxWidth: .infinity, alignment: .leading)
-                                    }
-
-                                    Button {
+                                    },
+                                    onDelete: {
                                         let haptic = UIImpactFeedbackGenerator(style: .medium)
                                         haptic.impactOccurred()
                                         conversationManager.deleteSession(session)
-                                    } label: {
-                                        Image(systemName: "trash")
-                                            .font(.system(size: 13))
-                                            .foregroundStyle(Color.secondary.opacity(0.65))
                                     }
-                                    .padding(.leading, 8)
-                                }
-                                .padding(.horizontal, 14)
-                                .padding(.vertical, 12)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                        .fill(Color(red: 0.93, green: 0.96, blue: 1.0))
                                 )
                             }
                         }
-                        .padding(.horizontal, 14)
-                        .padding(.top, 12)
                     }
+                    .padding(.horizontal, 16)
+                    .padding(.top, 2)
                 }
 
-                Divider()
+                Spacer()
 
-                // Bottom Profile Bar (Matching Image 1)
+                // Bottom Profile Bar (Matching Image 1 100%: Purple [A] circle + "Alo khoa" + "...")
                 HStack(spacing: 12) {
-                    KhoaAILogoView(size: 34, showGlow: false)
+                    // Purple circle avatar with white "A"
+                    ZStack {
+                        Circle()
+                            .fill(Color(red: 0.52, green: 0.16, blue: 0.67))
+                            .frame(width: 36, height: 36)
 
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(authManager.userEmail.isEmpty ? "nob******82@gmail.com" : authManager.userEmail)
-                            .font(.system(size: 13, weight: .bold))
-                            .foregroundStyle(Color.black)
-                            .lineLimit(1)
-
-                        Text("Tạo bởi Khoa Dev")
-                            .font(.system(size: 11, weight: .medium))
-                            .foregroundStyle(Color.secondary)
+                        Text("A")
+                            .font(.system(size: 17, weight: .bold))
+                            .foregroundStyle(Color.white)
                     }
+
+                    Text("Alo khoa")
+                        .font(.system(size: 16, weight: .regular))
+                        .foregroundStyle(Color.black.opacity(0.9))
 
                     Spacer()
 
+                    // Trailing "..." button
                     Button {
                         onOpenSettings()
                     } label: {
                         Image(systemName: "ellipsis")
-                            .font(.system(size: 15, weight: .bold))
-                            .foregroundStyle(Color.black.opacity(0.7))
-                            .frame(width: 34, height: 34)
-                            .background(Color.white)
-                            .clipShape(Circle())
-                            .overlay(Circle().strokeBorder(Color.black.opacity(0.08), lineWidth: 1))
-                            .shadow(color: Color.black.opacity(0.04), radius: 3, x: 0, y: 1)
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundStyle(Color.black.opacity(0.45))
+                            .padding(8)
                     }
                 }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 14)
-                .background(Color(red: 0.97, green: 0.98, blue: 0.99))
-                .padding(.bottom, max(proxy.safeAreaInsets.bottom, 12))
+                .padding(.horizontal, 20)
+                .padding(.top, 14)
+                .padding(.bottom, max(proxy.safeAreaInsets.bottom, 18))
+                .background(Color(red: 0.99, green: 0.99, blue: 0.99))
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(red: 0.98, green: 0.98, blue: 0.99))
+        .background(Color(red: 0.99, green: 0.99, blue: 0.99))
         .ignoresSafeArea(.all, edges: .vertical)
+    }
+
+    // Single Session Card (Matching Image 1)
+    private func sessionCard(
+        title: String,
+        isSelected: Bool,
+        onSelect: @escaping () -> Void,
+        onDelete: @escaping () -> Void
+    ) -> some View {
+        HStack {
+            Button {
+                onSelect()
+            } label: {
+                Text(title)
+                    .font(.system(size: 15.5, weight: .semibold))
+                    .foregroundStyle(Color(red: 0.22, green: 0.45, blue: 0.98))
+                    .lineLimit(1)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+
+            Menu {
+                Button(role: .destructive) {
+                    onDelete()
+                } label: {
+                    Label("Xóa cuộc trò chuyện", systemImage: "trash")
+                }
+            } label: {
+                Image(systemName: "ellipsis")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundStyle(Color.black.opacity(0.35))
+                    .padding(6)
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
+        .background(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(Color(red: 0.93, green: 0.95, blue: 1.0))
+        )
     }
 }

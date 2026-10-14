@@ -3,7 +3,12 @@
 //  KhoaAI
 //
 //  Created by Khoa Dev.
-//  Pure Light UI Liquid Glass Chat Interface with Neural AI Vision, Full Markdown, History Drawer, and Image Suggestion Chips.
+//  Pure Light UI Liquid Glass Chat Interface:
+//  - 100% transparent input container background
+//  - Transparent top bar buttons and borderless model selector
+//  - Dynamic mic/send button morphing (no clear X button)
+//  - Scroll-to-bottom downward arrow only visible when scrolled up
+//  - Markdown tables matching Image 2, line spacing, and history drawer matching Image 1.
 //
 
 import SwiftUI
@@ -11,6 +16,14 @@ import UIKit
 import PhotosUI
 import Vision
 import PDFKit
+
+// Preference key to track scroll position
+struct ChatScrollOffsetKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = nextValue()
+    }
+}
 
 public struct MainChatView: View {
     @StateObject private var service = DeepSeekService.shared
@@ -35,9 +48,8 @@ public struct MainChatView: View {
     @State private var isDrawerOpen: Bool = false
     @State private var dragOffset: CGFloat = 0.0
 
-    // Scroll States (Matching Image 4)
+    // Scroll States (Only visible when scrolled up away from bottom)
     @State private var showScrollToBottomButton: Bool = false
-    @State private var isScrolledUp: Bool = false
 
     @FocusState private var isInputFocused: Bool
 
@@ -49,7 +61,7 @@ public struct MainChatView: View {
         GeometryReader { geometry in
             ZStack(alignment: .leading) {
                 // Background & Main Chat View
-                mainContent
+                mainContent(geometry: geometry)
                     .frame(width: geometry.size.width, height: geometry.size.height)
                     .offset(x: isDrawerOpen ? drawerWidth : max(0, dragOffset))
                     .disabled(isDrawerOpen)
@@ -67,7 +79,7 @@ public struct MainChatView: View {
                         }
                 }
 
-                // History Sidebar Drawer (Slides in from Left, respects Safe Area)
+                // History Sidebar Drawer (Slides in from Left, matching Image 1)
                 HistorySidebarView(
                     isOpen: $isDrawerOpen,
                     onSelectSession: { session in
@@ -93,14 +105,13 @@ public struct MainChatView: View {
                     }
                 )
                 .frame(width: drawerWidth)
-                .background(Color(red: 0.98, green: 0.98, blue: 0.99))
+                .background(Color(red: 0.99, green: 0.99, blue: 0.99))
                 .clipShape(RoundedRectangle(cornerRadius: isDrawerOpen ? 24 : 0, style: .continuous))
                 .shadow(color: Color.black.opacity(isDrawerOpen ? 0.25 : 0), radius: 24, x: 12, y: 0)
                 .offset(x: drawerCurrentOffset)
                 .ignoresSafeArea(edges: .vertical)
             }
             .gesture(
-                // Interactive Swipe-to-Open / Swipe-to-Close Gesture matching video
                 DragGesture(minimumDistance: 12, coordinateSpace: .local)
                     .onChanged { value in
                         if !isDrawerOpen {
@@ -182,9 +193,8 @@ public struct MainChatView: View {
     }
 
     // MARK: - Main Content View
-    private var mainContent: some View {
+    private func mainContent(geometry: GeometryProxy) -> some View {
         ZStack {
-            // Crisp White Light Background
             Color.white
                 .ignoresSafeArea()
 
@@ -215,13 +225,13 @@ public struct MainChatView: View {
                     centerWelcomeView
                     Spacer()
                 } else {
-                    chatScrollView
+                    chatScrollView(geometry: geometry)
                 }
 
-                // Bottom Floating Liquid Glass Input Bar + Attachment Drawer
+                // Bottom 100% Transparent Input Bar + Attachment Drawer
                 bottomInputContainer
-                    .padding(.horizontal, 16)
-                    .padding(.bottom, 10)
+                    .padding(.horizontal, 14)
+                    .padding(.bottom, 6)
             }
         }
         .contentShape(Rectangle())
@@ -235,10 +245,10 @@ public struct MainChatView: View {
         }
     }
 
-    // MARK: - Top Navigation Bar (Liquid Glass)
+    // MARK: - Top Navigation Bar (100% Transparent per requirement 6)
     private var topBarView: some View {
-        HStack(spacing: 10) {
-            // Left menu / drawer button (2 horizontal bars matching image)
+        HStack(spacing: 12) {
+            // Left menu / drawer button (2 horizontal bars) - transparent background
             Button {
                 dismissKeyboard()
                 let haptic = UIImpactFeedbackGenerator(style: .light)
@@ -254,10 +264,11 @@ public struct MainChatView: View {
                         .frame(width: 13, height: 2.2)
                 }
                 .foregroundStyle(Color.black.opacity(0.85))
+                .frame(width: 40, height: 40)
+                .contentShape(Rectangle())
             }
-            .glassCircleButton(diameter: 44)
 
-            // Model Selector Menu: default "expert" (DeepSeek-R1)
+            // Model Selector Menu: BORDERLESS & 100% TRANSPARENT (No bounding frame per requirement 6)
             Menu {
                 Button {
                     service.selectedModel = "expert"
@@ -285,25 +296,17 @@ public struct MainChatView: View {
                     }
                 }
             } label: {
-                HStack(spacing: 5) {
+                HStack(spacing: 4) {
                     Text(service.selectedModel == "expert" ? "Expert" : "DeepSeek-V3")
-                        .font(.system(size: 14, weight: .bold, design: .rounded))
-                        .foregroundStyle(Color.black.opacity(0.85))
+                        .font(.system(size: 15.5, weight: .bold, design: .rounded))
+                        .foregroundStyle(Color.black.opacity(0.88))
 
                     Image(systemName: "chevron.down")
                         .font(.system(size: 10, weight: .bold))
                         .foregroundStyle(Color.black.opacity(0.6))
                 }
-                .padding(.horizontal, 14)
+                .padding(.horizontal, 4)
                 .padding(.vertical, 8)
-                .background {
-                    Capsule()
-                        .fill(Color.white.opacity(0.92))
-                        .background(.ultraThinMaterial)
-                        .clipShape(Capsule())
-                        .overlay(Capsule().strokeBorder(Color.black.opacity(0.08), lineWidth: 1))
-                        .shadow(color: Color.black.opacity(0.04), radius: 6, x: 0, y: 2)
-                }
             }
 
             Spacer()
@@ -318,8 +321,9 @@ public struct MainChatView: View {
                 Image(systemName: isMutedAudio ? "speaker.slash" : "speaker.wave.2")
                     .font(.system(size: 17, weight: .semibold))
                     .foregroundStyle(Color.black.opacity(0.85))
+                    .frame(width: 40, height: 40)
+                    .contentShape(Rectangle())
             }
-            .glassCircleButton(diameter: 44)
 
             // Right Action 2: New Chat / Plus
             Button {
@@ -335,12 +339,13 @@ public struct MainChatView: View {
                 Image(systemName: "plus")
                     .font(.system(size: 18, weight: .semibold))
                     .foregroundStyle(Color.black.opacity(0.85))
+                    .frame(width: 40, height: 40)
+                    .contentShape(Rectangle())
             }
-            .glassCircleButton(diameter: 44)
         }
     }
 
-    // MARK: - Center Welcome View (NO LOGO, only clean greeting per user request)
+    // MARK: - Center Welcome View
     private var centerWelcomeView: some View {
         VStack(spacing: 12) {
             Text("Xin chào, tôi có thể giúp gì cho bạn?")
@@ -356,8 +361,9 @@ public struct MainChatView: View {
         }
     }
 
-    // MARK: - Chat Scroll View with Floating Scroll-To-Bottom Arrow (Matching Image 4)
-    private var chatScrollView: some View {
+    // MARK: - Chat Scroll View with Downward Scroll-To-Bottom Arrow (Requirement 3)
+    // Only visible when scrolled up, disappears when at the bottom.
+    private func chatScrollView(geometry: GeometryProxy) -> some View {
         ScrollViewReader { proxy in
             ZStack(alignment: .bottomTrailing) {
                 ScrollView {
@@ -367,12 +373,33 @@ public struct MainChatView: View {
                                 .id(msg.id)
                         }
 
-                        // Invisible bottom anchor
+                        // Invisible bottom anchor tracked with geometry reader
+                        GeometryReader { geo in
+                            Color.clear
+                                .preference(
+                                    key: ChatScrollOffsetKey.self,
+                                    value: geo.frame(in: .named("CHAT_SCROLL_SPACE")).maxY
+                                )
+                        }
+                        .frame(height: 1)
+                        .id("BOTTOM_ANCHOR")
+
                         Color.clear
-                            .frame(height: 110)
-                            .id("BOTTOM_ANCHOR")
+                            .frame(height: 90)
                     }
                     .padding(.top, 12)
+                }
+                .coordinateSpace(name: "CHAT_SCROLL_SPACE")
+                .onPreferenceChange(ChatScrollOffsetKey.self) { maxY in
+                    // maxY is the Y position of the bottom anchor in the scroll view viewport.
+                    // When scrolled up, maxY is significantly greater than geometry.size.height.
+                    // When near or at the bottom, maxY is close to viewport height.
+                    let isScrolledUp = maxY > (geometry.size.height + 70)
+                    if showScrollToBottomButton != isScrolledUp {
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            showScrollToBottomButton = isScrolledUp
+                        }
+                    }
                 }
                 .scrollDismissesKeyboard(.interactively)
                 .contentShape(Rectangle())
@@ -380,13 +407,14 @@ public struct MainChatView: View {
                     dismissKeyboard()
                 }
 
-                // Floating Scroll-To-Bottom Downward Arrow Button (Matching Image 4)
-                if service.messages.count > 1 {
+                // Downward Arrow Button: only when scrolled up away from bottom
+                if showScrollToBottomButton && service.messages.count > 1 {
                     Button {
                         let haptic = UIImpactFeedbackGenerator(style: .light)
                         haptic.impactOccurred()
                         withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
                             proxy.scrollTo("BOTTOM_ANCHOR", anchor: .bottom)
+                            showScrollToBottomButton = false
                         }
                     } label: {
                         Image(systemName: "chevron.down")
@@ -407,46 +435,25 @@ public struct MainChatView: View {
         }
     }
 
-    // MARK: - Bottom Floating Liquid Glass Input Bar + Attachment Cards (Matching Image 2)
+    // MARK: - Bottom 100% Transparent Input Container (Requirement 5)
     private var bottomInputContainer: some View {
-        VStack(spacing: 12) {
-            // Main Input Capsule Card
-            VStack(spacing: 10) {
-                if let attachment = selectedAttachment {
-                    attachmentHeaderView(attachment: attachment)
-                }
-
-                inputTextFieldRow
-
-                inputControlsRow
+        VStack(spacing: 8) {
+            // Attachment Preview
+            if let attachment = selectedAttachment {
+                attachmentHeaderView(attachment: attachment)
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 14)
-            .background {
-                RoundedRectangle(cornerRadius: 28, style: .continuous)
-                    .fill(Color.white.opacity(0.94))
-                    .background(.ultraThinMaterial)
-                    .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
-                    .overlay {
-                        RoundedRectangle(cornerRadius: 28, style: .continuous)
-                            .strokeBorder(
-                                LinearGradient(
-                                    colors: [Color.white, Color.black.opacity(0.08)],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                ),
-                                lineWidth: 1.0
-                            )
-                    }
-                    .shadow(color: Color.black.opacity(0.08), radius: 18, x: 0, y: 8)
-                    .shadow(color: Color.black.opacity(0.02), radius: 4, x: 0, y: 1)
-            }
+
+            inputTextFieldRow
+            inputControlsRow
 
             // Attachment Cards Row: Chụp ảnh, Album, Tệp
             if showAttachmentDrawer {
                 attachmentDrawerRow
             }
         }
+        .padding(.horizontal, 6)
+        .padding(.vertical, 8)
+        .background(Color.clear) // 100% TRANSPARENT ABSOLUTE per requirement 5!
     }
 
     // Attachment Thumbnail + Suggestion Chips
@@ -526,33 +533,23 @@ public struct MainChatView: View {
         .padding(.horizontal, 4)
     }
 
-    // Text Field Row
+    // Text Field Row (Bỏ dấu x thanh nhập liệu per requirement 2!)
     private var inputTextFieldRow: some View {
         HStack(alignment: .center, spacing: 10) {
-            TextField("Nhập tin nhắn", text: $inputText, axis: .vertical)
-                .font(.system(size: 16, weight: .regular, design: .default))
+            TextField("Nhắn tin hoặc giữ để nói", text: $inputText, axis: .vertical)
+                .font(.system(size: 16.5, weight: .regular, design: .default))
                 .foregroundStyle(Color.black)
                 .lineLimit(1...5)
                 .focused($isInputFocused)
                 .padding(.horizontal, 6)
-                .padding(.top, 2)
-
-            if !inputText.isEmpty {
-                Button {
-                    inputText = ""
-                } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .foregroundStyle(Color.secondary.opacity(0.6))
-                        .font(.system(size: 16))
-                }
-            }
+                .padding(.vertical, 4)
         }
     }
 
-    // Controls Row
+    // Controls Row: Pill Suy nghĩ, Pill Tìm kiếm, Plus (+), and Dynamic Mic/Send button (Requirement 2)
     private var inputControlsRow: some View {
         HStack(spacing: 8) {
-            // Pill 1: Suy nghĩ
+            // Pill 1: Suy nghĩ (default false)
             Button {
                 let haptic = UIImpactFeedbackGenerator(style: .light)
                 haptic.impactOccurred()
@@ -569,7 +566,7 @@ public struct MainChatView: View {
             .glassPill(active: service.isThinkingEnabled, accentColor: Color(red: 0.12, green: 0.45, blue: 0.95))
             .fixedSize(horizontal: true, vertical: false)
 
-            // Pill 2: Tìm kiếm
+            // Pill 2: Tìm kiếm (default always true)
             Button {
                 let haptic = UIImpactFeedbackGenerator(style: .light)
                 haptic.impactOccurred()
@@ -588,7 +585,7 @@ public struct MainChatView: View {
 
             Spacer()
 
-            // Plus / Xmark Button
+            // Plus Button
             Button {
                 dismissKeyboard()
                 let haptic = UIImpactFeedbackGenerator(style: .light)
@@ -603,19 +600,10 @@ public struct MainChatView: View {
             }
             .glassCircleButton(diameter: 40)
 
-            // Waveform
-            Button {
-                dismissKeyboard()
-                let haptic = UIImpactFeedbackGenerator(style: .medium)
-                haptic.impactOccurred()
-            } label: {
-                Image(systemName: "waveform")
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundStyle(Color.black.opacity(0.85))
-            }
-            .glassCircleButton(diameter: 40)
-
-            // Send or Stop
+            // Dynamic Mic / Send / Stop Button right next to (+) (Requirement 2)
+            // When typing text -> becomes SEND icon (↑)
+            // When streaming -> becomes STOP icon (■)
+            // When empty -> shows MIC icon
             if service.isGenerating {
                 Button {
                     let haptic = UIImpactFeedbackGenerator(style: .medium)
@@ -636,6 +624,17 @@ public struct MainChatView: View {
                         .foregroundStyle(Color.white)
                 }
                 .glassCircleButton(diameter: 40, active: true)
+            } else {
+                Button {
+                    dismissKeyboard()
+                    let haptic = UIImpactFeedbackGenerator(style: .medium)
+                    haptic.impactOccurred()
+                } label: {
+                    Image(systemName: "waveform")
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundStyle(Color.black.opacity(0.85))
+                }
+                .glassCircleButton(diameter: 40)
             }
         }
     }
@@ -664,8 +663,7 @@ public struct MainChatView: View {
         ))
     }
 
-
-    // Quick Suggestion Chip Builder (Matching Image 2)
+    // Quick Suggestion Chip Builder
     private func suggestionChip(title: String, action: @escaping () -> Void) -> some View {
         Button {
             let haptic = UIImpactFeedbackGenerator(style: .light)
@@ -862,4 +860,3 @@ public struct WebSearchPillModifier: ViewModifier {
             }
     }
 }
-

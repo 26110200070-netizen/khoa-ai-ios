@@ -3,8 +3,9 @@
 //  KhoaAI
 //
 //  Created by Khoa Dev.
-//  Rich Markdown message renderer with Code Blocks (copyable white cards), Tables, Headings,
-//  Animated 3-dot thinking loader, and image previews matching user design.
+//  Rich Markdown message renderer with Code Blocks, Tables matching Image 2,
+//  proper paragraph line-spacing matching modern AI apps, animated 3-dot thinking loader,
+//  and image previews.
 //
 
 import SwiftUI
@@ -21,7 +22,7 @@ public struct ChatBubbleView: View {
     }
 
     public var body: some View {
-        VStack(alignment: message.isUser ? .trailing : .leading, spacing: 8) {
+        VStack(alignment: message.isUser ? .trailing : .leading, spacing: 10) {
             if message.isUser {
                 userBubble
             } else {
@@ -35,7 +36,7 @@ public struct ChatBubbleView: View {
     // MARK: - User Message Bubble
     private var userBubble: some View {
         VStack(alignment: .trailing, spacing: 6) {
-            // Attached Image Preview (Matching Image 3)
+            // Attached Image Preview
             if let image = message.image {
                 Image(uiImage: image)
                     .resizable()
@@ -53,6 +54,7 @@ public struct ChatBubbleView: View {
             if !message.text.isEmpty {
                 Text(message.text)
                     .font(.system(size: 16, weight: .regular, design: .default))
+                    .lineSpacing(4)
                     .foregroundStyle(Color.black)
                     .padding(.horizontal, 16)
                     .padding(.vertical, 11)
@@ -72,17 +74,16 @@ public struct ChatBubbleView: View {
 
     // MARK: - AI Response View
     private var aiResponseView: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            // State A: Initial 3-dots Bouncing Loader (Matching video think_72.png)
+        VStack(alignment: .leading, spacing: 14) {
+            // State A: Initial 3-dots Bouncing Loader
             if message.text.isEmpty && message.thinkingText.isEmpty && message.isStreaming {
                 ThreeBouncingDotsView()
                     .padding(.vertical, 8)
             }
 
-            // State B: DeepSeek-R1 Thinking Block (Matching Image 3 & Video)
+            // State B: DeepSeek-R1 Thinking Block
             if !message.thinkingText.isEmpty {
                 VStack(alignment: .leading, spacing: 8) {
-                    // Header toggle: "Suy nghĩ ᨈ" or "Đã suy nghĩ xong ›"
                     Button {
                         withAnimation(.spring(response: 0.32, dampingFraction: 0.8)) {
                             isThinkingExpanded.toggle()
@@ -106,7 +107,6 @@ public struct ChatBubbleView: View {
                     }
                     .buttonStyle(.plain)
 
-                    // Indented Thinking Content with Left Gray Accent Border
                     if isThinkingExpanded {
                         HStack(alignment: .top, spacing: 12) {
                             Rectangle()
@@ -117,7 +117,7 @@ public struct ChatBubbleView: View {
                             Text(message.thinkingText)
                                 .font(.system(size: 13.5, weight: .regular, design: .default))
                                 .foregroundStyle(Color.secondary.opacity(0.88))
-                                .lineSpacing(4)
+                                .lineSpacing(5)
                                 .frame(maxWidth: .infinity, alignment: .leading)
                         }
                         .padding(.vertical, 2)
@@ -126,13 +126,13 @@ public struct ChatBubbleView: View {
                 }
             }
 
-            // State C: Full Markdown Answer Content (Headings, Tables, White Code Cards)
+            // State C: Full Markdown Answer Content
             if !message.text.isEmpty {
                 RichMarkdownView(content: message.text)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
 
-            // State D: Bottom Action Toolbar (Copy, Thumbs Up/Down, TTS, Share)
+            // State D: Bottom Action Toolbar
             if !message.text.isEmpty && !message.isStreaming {
                 aiActionToolbar
             }
@@ -195,11 +195,11 @@ public struct ChatBubbleView: View {
 
             Spacer()
         }
-        .padding(.top, 4)
+        .padding(.top, 6)
     }
 }
 
-// MARK: - Animated 3-Dots Bouncing Loader (Matching think_72.png)
+// MARK: - Animated 3-Dots Bouncing Loader
 struct ThreeBouncingDotsView: View {
     @State private var phase: CGFloat = 0
 
@@ -223,13 +223,13 @@ struct ThreeBouncingDotsView: View {
     }
 }
 
-// MARK: - Full Rich Markdown Renderer
+// MARK: - Full Rich Markdown Renderer with Generous Line Spacing
 struct RichMarkdownView: View {
     let content: String
 
     var body: some View {
         let blocks = parseMarkdownBlocks(content)
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 14) {
             ForEach(blocks.indices, id: \.self) { idx in
                 switch blocks[idx] {
                 case .codeBlock(let lang, let code):
@@ -243,8 +243,8 @@ struct RichMarkdownView: View {
 
                 case .paragraph(let text):
                     Text(LocalizedStringKey(text))
-                        .font(.system(size: 17, weight: .regular, design: .default))
-                        .lineSpacing(5)
+                        .font(.system(size: 16.5, weight: .regular, design: .default))
+                        .lineSpacing(6.5)
                         .foregroundStyle(Color.black.opacity(0.92))
                         .textSelection(.enabled)
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -268,6 +268,7 @@ struct MarkdownHeadingView: View {
             ))
             .foregroundStyle(Color.black)
             .padding(.top, level == 1 ? 8 : 4)
+            .padding(.bottom, 2)
     }
 }
 
@@ -332,61 +333,148 @@ struct MarkdownCodeCard: View {
     }
 }
 
-// MARK: - Markdown Table Grid View
+// MARK: - Markdown Table View Matching Image 2 100%
+// White card with rounded corners, top header bar [ Bảng  􀉁  􀈂  􀅊 ],
+// bold first column, thin grid lines, and horizontal scrolling.
 struct MarkdownTableView: View {
     let headers: [String]
     let rows: [[String]]
 
+    @State private var copied: Bool = false
+    @State private var showFullScreen: Bool = false
+
     var body: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            VStack(alignment: .leading, spacing: 0) {
-                // Header Row
-                HStack(spacing: 0) {
-                    ForEach(headers.indices, id: \.self) { idx in
-                        Text(headers[idx])
-                            .font(.system(size: 13, weight: .bold))
-                            .foregroundStyle(Color.black)
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 8)
-                            .frame(minWidth: 90, alignment: .leading)
-                            .background(Color(.systemGray6))
+        VStack(alignment: .leading, spacing: 0) {
+            // Top Table Toolbar matching Image 2
+            HStack(spacing: 14) {
+                Text("Bảng")
+                    .font(.system(size: 13.5, weight: .regular))
+                    .foregroundStyle(Color.secondary)
 
-                        if idx < headers.count - 1 {
-                            Divider()
-                        }
-                    }
+                Spacer()
+
+                // Action 1: Copy Table
+                Button {
+                    copyTableToClipboard()
+                } label: {
+                    Image(systemName: copied ? "checkmark" : "doc.on.doc")
+                        .font(.system(size: 13))
+                        .foregroundStyle(copied ? Color.green : Color.secondary.opacity(0.85))
                 }
-                .border(Color.black.opacity(0.08), width: 1)
 
-                // Data Rows
-                ForEach(rows.indices, id: \.self) { rIdx in
-                    let row = rows[rIdx]
+                // Action 2: Download / Save icon
+                Button {
+                    copyTableToClipboard()
+                } label: {
+                    Image(systemName: "arrow.down.to.line")
+                        .font(.system(size: 13))
+                        .foregroundStyle(Color.secondary.opacity(0.85))
+                }
+
+                // Action 3: Expand icon
+                Button {
+                    showFullScreen.toggle()
+                } label: {
+                    Image(systemName: "arrow.up.left.and.arrow.down.right")
+                        .font(.system(size: 12.5))
+                        .foregroundStyle(Color.secondary.opacity(0.85))
+                }
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 10)
+            .background(Color.white)
+
+            Divider()
+                .background(Color.black.opacity(0.08))
+
+            // Scrollable Table Grid
+            ScrollView(.horizontal, showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 0) {
+                    // Header Row
                     HStack(spacing: 0) {
                         ForEach(headers.indices, id: \.self) { cIdx in
-                            let cell = cIdx < row.count ? row[cIdx] : ""
-                            Text(cell)
-                                .font(.system(size: 13))
-                                .foregroundStyle(Color.black.opacity(0.88))
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 8)
-                                .frame(minWidth: 90, alignment: .leading)
-                                .background(rIdx % 2 == 0 ? Color.white : Color(.systemGray6).opacity(0.3))
+                            Text(headers[cIdx])
+                                .font(.system(size: 14, weight: .bold))
+                                .foregroundStyle(Color.black.opacity(0.92))
+                                .padding(.horizontal, 14)
+                                .padding(.vertical, 10)
+                                .frame(minWidth: columnMinWidth(for: cIdx), alignment: .leading)
 
                             if cIdx < headers.count - 1 {
-                                Divider()
+                                Rectangle()
+                                    .fill(Color.black.opacity(0.08))
+                                    .frame(width: 1)
                             }
                         }
                     }
-                    .border(Color.black.opacity(0.06), width: 0.5)
+                    .background(Color.white)
+
+                    Divider()
+                        .background(Color.black.opacity(0.08))
+
+                    // Data Rows
+                    ForEach(rows.indices, id: \.self) { rIdx in
+                        let row = rows[rIdx]
+                        HStack(spacing: 0) {
+                            ForEach(headers.indices, id: \.self) { cIdx in
+                                let cellText = cIdx < row.count ? row[cIdx] : ""
+                                Text(cellText)
+                                    // First column is Bold (Matching Image 2: "Thứ 2", "Thứ 3", etc.)
+                                    .font(.system(size: 13.5, weight: cIdx == 0 ? .bold : .regular))
+                                    .foregroundStyle(Color.black.opacity(0.9))
+                                    .padding(.horizontal, 14)
+                                    .padding(.vertical, 10)
+                                    .frame(minWidth: columnMinWidth(for: cIdx), alignment: .leading)
+
+                                if cIdx < headers.count - 1 {
+                                    Rectangle()
+                                        .fill(Color.black.opacity(0.08))
+                                        .frame(width: 1)
+                                }
+                            }
+                        }
+                        .background(rIdx % 2 == 1 ? Color(.systemGray6).opacity(0.2) : Color.white)
+
+                        if rIdx < rows.count - 1 {
+                            Divider()
+                                .background(Color.black.opacity(0.08))
+                        }
+                    }
                 }
             }
-            .clipShape(RoundedRectangle(cornerRadius: 10))
-            .overlay(
-                RoundedRectangle(cornerRadius: 10)
-                    .strokeBorder(Color.black.opacity(0.1), lineWidth: 1)
-            )
         }
-        .padding(.vertical, 4)
+        .background(Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .strokeBorder(Color.black.opacity(0.12), lineWidth: 1)
+        )
+        .shadow(color: Color.black.opacity(0.03), radius: 6, x: 0, y: 2)
+        .padding(.vertical, 6)
+    }
+
+    private func columnMinWidth(for colIndex: Int) -> CGFloat {
+        if colIndex == 0 {
+            return 95
+        } else if colIndex == 1 {
+            return 115
+        } else {
+            return 140
+        }
+    }
+
+    private func copyTableToClipboard() {
+        var tsv = headers.joined(separator: "\t") + "\n"
+        for row in rows {
+            tsv += row.joined(separator: "\t") + "\n"
+        }
+        UIPasteboard.general.string = tsv
+        let haptic = UIImpactFeedbackGenerator(style: .light)
+        haptic.impactOccurred()
+        withAnimation { copied = true }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.8) {
+            withAnimation { copied = false }
+        }
     }
 }
 
@@ -402,6 +490,21 @@ func parseMarkdownBlocks(_ raw: String) -> [MarkdownBlock] {
     var blocks: [MarkdownBlock] = []
     let lines = raw.components(separatedBy: "\n")
     var idx = 0
+
+    func splitCells(_ line: String) -> [String] {
+        var trimmed = line.trimmingCharacters(in: .whitespaces)
+        if trimmed.hasPrefix("|") { trimmed.removeFirst() }
+        if trimmed.hasSuffix("|") { trimmed.removeLast() }
+        return trimmed.components(separatedBy: "|").map { $0.trimmingCharacters(in: .whitespaces) }
+    }
+
+    func isSeparatorRow(_ line: String) -> Bool {
+        let cleaned = line.replacingOccurrences(of: "|", with: "")
+            .replacingOccurrences(of: "-", with: "")
+            .replacingOccurrences(of: ":", with: "")
+            .trimmingCharacters(in: .whitespaces)
+        return cleaned.isEmpty && line.contains("-")
+    }
 
     while idx < lines.count {
         let line = lines[idx]
@@ -424,20 +527,22 @@ func parseMarkdownBlocks(_ raw: String) -> [MarkdownBlock] {
             continue
         }
 
-        // 2. Table detection (starts with | and followed by separator | --- |)
-        if line.contains("|") && idx + 1 < lines.count && lines[idx + 1].contains("|") && lines[idx + 1].contains("-") {
-            let headerCells = line.split(separator: "|").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
+        // 2. Table detection (starts with | or contains | with dashes in next line)
+        if line.contains("|") && idx + 1 < lines.count && isSeparatorRow(lines[idx + 1]) {
+            let headerCells = splitCells(line).filter { !$0.isEmpty }
             idx += 2 // skip header and separator row
             var tableRows: [[String]] = []
             while idx < lines.count && lines[idx].contains("|") {
-                let rowCells = lines[idx].split(separator: "|").map { $0.trimmingCharacters(in: .whitespaces) }
-                if !rowCells.isEmpty {
+                let rowCells = splitCells(lines[idx])
+                if !rowCells.isEmpty && !isSeparatorRow(lines[idx]) {
                     tableRows.append(rowCells)
                 }
                 idx += 1
             }
-            blocks.append(.table(headers: headerCells, rows: tableRows))
-            continue
+            if !headerCells.isEmpty {
+                blocks.append(.table(headers: headerCells, rows: tableRows))
+                continue
+            }
         }
 
         // 3. Headings
@@ -455,20 +560,21 @@ func parseMarkdownBlocks(_ raw: String) -> [MarkdownBlock] {
             continue
         }
 
-        // 4. Regular Paragraph / Bullet list (accumulate until empty line or code/table)
+        // 4. Regular Paragraphs
         var paraLines: [String] = []
         while idx < lines.count {
             let cur = lines[idx]
             if cur.trimmingCharacters(in: .whitespaces).hasPrefix("```") ||
-               (cur.contains("|") && idx + 1 < lines.count && lines[idx + 1].contains("-")) ||
+               (cur.contains("|") && idx + 1 < lines.count && isSeparatorRow(lines[idx + 1])) ||
                cur.hasPrefix("# ") || cur.hasPrefix("## ") || cur.hasPrefix("### ") {
+                break
+            }
+            if cur.trimmingCharacters(in: .whitespaces).isEmpty && !paraLines.isEmpty {
+                idx += 1
                 break
             }
             paraLines.append(cur)
             idx += 1
-            if cur.trimmingCharacters(in: .whitespaces).isEmpty && paraLines.count > 1 {
-                break
-            }
         }
 
         let combined = paraLines.joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines)
