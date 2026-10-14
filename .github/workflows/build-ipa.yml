@@ -60,19 +60,25 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/heads/main') || startsWith(github.ref, 'refs/heads/master') || github.event_name == 'workflow_dispatch'
         with:
-          tag_name: v1.0.9
-          name: "khoa.ai iOS v1.0.9 (Unsigned IPA)"
+          tag_name: v1.0.10
+          name: "khoa.ai iOS v1.0.10 (Unsigned IPA)"
           body: |
-            ### 🚀 khoa.ai v1.0.9 - Sửa lỗi giật cuộn tin nhắn & Định dạng danh sách thông minh
+            ### 🚀 khoa.ai v1.0.10 - Khung Code Chuẩn ChatGPT, Dấu Chấm Tròn & Cuộn Đẩy Lên Hoàn Hảo
             Được sáng lập và phát triển bởi **Khoa Dev**.
 
-            #### ✨ Các cải tiến nổi bật trong phiên bản 1.0.9:
-            1. 🎯 **Khắc phục triệt để lỗi giật màn hình khi gửi tin nhắn & kéo cuộn**:
-               - **Không còn bị giật giật kéo xuống**: Tích hợp nhận diện cảm ứng cử chỉ kéo (`DragGesture`) tức thì, ngay khi ngón tay chạm kéo màn hình lên thì chế độ tự động cuộn lập tức dừng hẳn 100%, bảo đảm không có hiện tượng giật giật kéo tuột màn hình xuống theo ngón tay.
-               - **Không bị nảy ngược**: Tạo độ trễ đệm 1.2s ngay sau khi gửi tin nhắn mới, giúp tin nhắn của bạn được đẩy êm ái lên vị trí trên cùng và đứng yên vững chắc tại đó trong lúc AI bắt đầu viết những dòng đầu tiên.
-            2. 📝 **Sử dụng gạch đầu dòng thông minh & đúng ngữ cảnh**:
-               - Tinh chỉnh chỉ dẫn hành văn cho AI: Khi người dùng hỏi về tính năng, khả năng ("bạn có thể làm gì"), danh mục, hoặc các bước thực hiện, AI BẮT BUỘC dùng gạch đầu dòng rõ ràng (- **Mục**: chi tiết) thay vì ép thành các đoạn văn dài khó đọc.
-               - Khi trò chuyện, đàm đạo thông thường vẫn giữ các đoạn văn tự nhiên, thông thoáng.
+            #### ✨ Các cải tiến nổi bật trong phiên bản 1.0.10:
+            1. 💻 **Khung Code Markdown chuẩn ChatGPT 100% (Ảnh 1)**:
+               - Bo góc tròn mềm mại (`cornerRadius: 16`), viền mảnh tinh tế, nền trắng tinh khôi không đường kẻ ngang ngăn cách.
+               - Tên ngôn ngữ lập trình nằm tinh gọn góc trên bên trái, duy nhất một nút sao chép `[doc.on.doc]` ở góc trên bên phải.
+               - Tô màu cú pháp (Syntax Highlighting) sắc nét: từ khóa màu tím/hồng, chuỗi ký tự màu đỏ sẫm, số màu xanh tím.
+            2. ⚪ **Chuyển đổi dấu gạch đầu dòng sang dấu chấm tròn (•)**:
+               - Tự động hiển thị và định dạng danh sách thành dấu chấm tròn `•` đồng đều, chuyên nghiệp chuẩn mực ChatGPT.
+               - Tinh chỉnh System Prompt huấn luyện AI sử dụng dấu chấm tròn và bố cục giải thích code ngắn gọn, mạch lạc.
+            3. 📱 **Trải nghiệm cuộn và đẩy tin nhắn mới hoàn hảo (gpt.mp4)**:
+               - **Đẩy tin nhắn lên kịch trần**: Tạo vùng đệm dưới đủ lớn giúp tin nhắn mới của người dùng được đẩy lên cao đúng vị trí trên cùng của khung nhìn.
+               - **Triệt tiêu hiện tượng giật/kéo tuột xuống khi AI gõ ("không bị thực ở dưới lại")**: Khi AI mới bắt đầu xuất những dòng đầu tiên, tin nhắn của người dùng đứng yên tuyệt đối trên đầu; AI chỉ cuộn tự động khi nội dung thực sự dài vượt qua chiều cao màn hình.
+               - **Khóa cuộn tức thì khi chạm kéo**: Bất kỳ thao tác kéo tay nào của người dùng cũng dừng cuộn tự động ngay lập tức, không giật, không kéo lại.
+               - **Nút mũi tên xuống thông minh**: Hiện khi kéo lên xem tin nhắn cũ và ẩn khi đã ở cuối.
 
             #### ✨ Các cải tiến và sửa lỗi trong phiên bản 1.0.4:
             1. 🌐 **Web Search luôn bật mặc định**, Suy nghĩ (DeepThink) mặc định là `false`.

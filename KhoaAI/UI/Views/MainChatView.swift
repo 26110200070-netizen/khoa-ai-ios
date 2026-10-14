@@ -53,6 +53,7 @@ public struct MainChatView: View {
     @State private var isAutoScrollActive: Bool = true
     @State private var isUserInteracting: Bool = false
     @State private var lastSentMessageTime: TimeInterval = 0
+    @State private var currentContentMaxY: CGFloat = 0
 
     @FocusState private var isInputFocused: Bool
 
@@ -371,119 +372,124 @@ public struct MainChatView: View {
     // 4. Downward arrow shows only when scrolled up; tapping it scrolls back to bottom and resumes auto-scroll.
     private func chatScrollView(geometry: GeometryProxy) -> some View {
         ScrollViewReader { proxy in
-            ZStack(alignment: .bottomTrailing) {
-                ScrollView {
-                    LazyVStack(spacing: 16) {
-                        ForEach(service.messages) { msg in
-                            ChatBubbleView(message: msg)
-                                .id(msg.id)
-                        }
+            GeometryReader { scrollGeo in
+                ZStack(alignment: .bottomTrailing) {
+                    ScrollView {
+                        LazyVStack(spacing: 16) {
+                            ForEach(service.messages) { msg in
+                                ChatBubbleView(message: msg)
+                                    .id(msg.id)
+                            }
 
-                        // Invisible bottom anchor tracked with geometry reader
-                        GeometryReader { geo in
+                            // Marker at the bottom of the messages (before bottom spacer)
+                            GeometryReader { geo in
+                                Color.clear
+                                    .preference(
+                                        key: ChatScrollOffsetKey.self,
+                                        value: geo.frame(in: .named("CHAT_SCROLL_SPACE")).maxY
+                                    )
+                            }
+                            .frame(height: 1)
+                            .id("CONTENT_BOTTOM_ANCHOR")
+
+                            // Generous bottom spacer to allow new user message to scroll cleanly to the top
                             Color.clear
-                                .preference(
-                                    key: ChatScrollOffsetKey.self,
-                                    value: geo.frame(in: .named("CHAT_SCROLL_SPACE")).maxY
-                                )
+                                .frame(height: max(scrollGeo.size.height * 0.95, 650))
                         }
-                        .frame(height: 1)
-                        .id("BOTTOM_ANCHOR")
-
-                        Color.clear
-                            .frame(height: 120)
+                        .padding(.top, 12)
                     }
-                    .padding(.top, 12)
-                }
-                .coordinateSpace(name: "CHAT_SCROLL_SPACE")
-                .simultaneousGesture(
-                    DragGesture(minimumDistance: 3)
-                        .onChanged { value in
-                            // The INSTANT the user touches and drags:
-                            // Immediately freeze auto-scroll so it never pulls down or jerks!
-                            if abs(value.translation.height) > 2 {
-                                isUserInteracting = true
-                                isAutoScrollActive = false
-                                if !showScrollToBottomButton {
+                    .coordinateSpace(name: "CHAT_SCROLL_SPACE")
+                    .simultaneousGesture(
+                        DragGesture(minimumDistance: 3)
+                            .onChanged { value in
+                                // Instant freeze on touch/drag so user can read without any pull-down or jerking
+                                if abs(value.translation.height) > 2 {
+                                    isUserInteracting = true
+                                    isAutoScrollActive = false
+                                    if !showScrollToBottomButton {
+                                        showScrollToBottomButton = true
+                                    }
+                                }
+                            }
+                    )
+                    .onPreferenceChange(ChatScrollOffsetKey.self) { maxY in
+                        currentContentMaxY = maxY
+                        // Check if bottom of content is within visible window
+                        let atBottom = maxY <= (scrollGeo.size.height + 40)
+                        if atBottom && !isUserInteracting {
+                            isAutoScrollActive = true
+                            if showScrollToBottomButton {
+                                withAnimation(.easeInOut(duration: 0.2)) {
+                                    showScrollToBottomButton = false
+                                }
+                            }
+                        } else if !atBottom && !isAutoScrollActive {
+                            if !showScrollToBottomButton {
+                                withAnimation(.easeInOut(duration: 0.2)) {
                                     showScrollToBottomButton = true
                                 }
                             }
                         }
-                )
-                .onPreferenceChange(ChatScrollOffsetKey.self) { maxY in
-                    let atBottom = maxY <= (geometry.size.height + 40)
-                    if atBottom && !isUserInteracting {
-                        isAutoScrollActive = true
-                        if showScrollToBottomButton {
-                            withAnimation(.easeInOut(duration: 0.2)) {
+                    }
+                    .onChange(of: service.messages.count) { _ in
+                        // When user sends a message: Push previous messages UP so new user message is at the top
+                        if let lastUserMsg = service.messages.last(where: { $0.isUser }) {
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.04) {
+                                withAnimation(.easeInOut(duration: 0.38)) {
+                                    proxy.scrollTo(lastUserMsg.id, anchor: .top)
+                                }
+                            }
+                        }
+                    }
+                    .onChange(of: service.messages.last?.text) { _ in
+                        // While AI is generating:
+                        // Only scroll if content bottom has reached the lower threshold (near input bar).
+                        // This prevents jerking down when the AI response is still short!
+                        if !isUserInteracting && isAutoScrollActive && service.isGenerating {
+                            if currentContentMaxY >= (scrollGeo.size.height - 110) {
+                                proxy.scrollTo("CONTENT_BOTTOM_ANCHOR", anchor: .bottom)
+                            }
+                        }
+                    }
+                    .onChange(of: service.messages.last?.thinkingText) { _ in
+                        if !isUserInteracting && isAutoScrollActive && service.isGenerating {
+                            if currentContentMaxY >= (scrollGeo.size.height - 110) {
+                                proxy.scrollTo("CONTENT_BOTTOM_ANCHOR", anchor: .bottom)
+                            }
+                        }
+                    }
+                    .scrollDismissesKeyboard(.interactively)
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        dismissKeyboard()
+                    }
+
+                    // Downward Arrow Button: only when scrolled up away from bottom
+                    if showScrollToBottomButton && service.messages.count > 1 {
+                        Button {
+                            let haptic = UIImpactFeedbackGenerator(style: .light)
+                            haptic.impactOccurred()
+                            isUserInteracting = false
+                            isAutoScrollActive = true
+                            withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
+                                proxy.scrollTo("CONTENT_BOTTOM_ANCHOR", anchor: .bottom)
                                 showScrollToBottomButton = false
                             }
+                        } label: {
+                            Image(systemName: "chevron.down")
+                                .font(.system(size: 15, weight: .bold))
+                                .foregroundStyle(Color.black.opacity(0.75))
+                                .frame(width: 40, height: 40)
+                                .background(Color.white.opacity(0.96))
+                                .background(.ultraThinMaterial)
+                                .clipShape(Circle())
+                                .overlay(Circle().strokeBorder(Color.black.opacity(0.08), lineWidth: 1))
+                                .shadow(color: Color.black.opacity(0.12), radius: 8, x: 0, y: 3)
                         }
-                    } else if !atBottom && !isAutoScrollActive {
-                        if !showScrollToBottomButton {
-                            withAnimation(.easeInOut(duration: 0.2)) {
-                                showScrollToBottomButton = true
-                            }
-                        }
+                        .padding(.trailing, 16)
+                        .padding(.bottom, 12)
+                        .transition(.scale.combined(with: .opacity))
                     }
-                }
-                .onChange(of: service.messages.count) { _ in
-                    // When user sends a message: Push old messages UP to position new message cleanly at the top
-                    if let lastUserMsg = service.messages.last(where: { $0.isUser }) {
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.04) {
-                            withAnimation(.easeInOut(duration: 0.38)) {
-                                proxy.scrollTo(lastUserMsg.id, anchor: .top)
-                            }
-                        }
-                    }
-                }
-                .onChange(of: service.messages.last?.text) { _ in
-                    // While AI streams text:
-                    // 1. MUST NOT be user interacting (user dragging/reading)
-                    // 2. MUST have isAutoScrollActive == true
-                    // 3. Give a 1.2s grace period right after sending so user message is NOT jerked down!
-                    let timeSinceSend = Date().timeIntervalSince1970 - lastSentMessageTime
-                    if !isUserInteracting && isAutoScrollActive && service.isGenerating && timeSinceSend > 1.2 {
-                        proxy.scrollTo("BOTTOM_ANCHOR", anchor: .bottom)
-                    }
-                }
-                .onChange(of: service.messages.last?.thinkingText) { _ in
-                    let timeSinceSend = Date().timeIntervalSince1970 - lastSentMessageTime
-                    if !isUserInteracting && isAutoScrollActive && service.isGenerating && timeSinceSend > 1.2 {
-                        proxy.scrollTo("BOTTOM_ANCHOR", anchor: .bottom)
-                    }
-                }
-                .scrollDismissesKeyboard(.interactively)
-                .contentShape(Rectangle())
-                .onTapGesture {
-                    dismissKeyboard()
-                }
-
-                // Downward Arrow Button: only when scrolled up away from bottom
-                if showScrollToBottomButton && service.messages.count > 1 {
-                    Button {
-                        let haptic = UIImpactFeedbackGenerator(style: .light)
-                        haptic.impactOccurred()
-                        isUserInteracting = false
-                        isAutoScrollActive = true
-                        withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
-                            proxy.scrollTo("BOTTOM_ANCHOR", anchor: .bottom)
-                            showScrollToBottomButton = false
-                        }
-                    } label: {
-                        Image(systemName: "chevron.down")
-                            .font(.system(size: 15, weight: .bold))
-                            .foregroundStyle(Color.black.opacity(0.75))
-                            .frame(width: 40, height: 40)
-                            .background(Color.white.opacity(0.96))
-                            .background(.ultraThinMaterial)
-                            .clipShape(Circle())
-                            .overlay(Circle().strokeBorder(Color.black.opacity(0.08), lineWidth: 1))
-                            .shadow(color: Color.black.opacity(0.12), radius: 8, x: 0, y: 3)
-                    }
-                    .padding(.trailing, 16)
-                    .padding(.bottom, 12)
-                    .transition(.scale.combined(with: .opacity))
                 }
             }
         }

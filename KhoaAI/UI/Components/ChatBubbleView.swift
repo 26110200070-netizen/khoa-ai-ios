@@ -242,7 +242,7 @@ struct RichMarkdownView: View {
                     MarkdownHeadingView(level: level, text: text)
 
                 case .paragraph(let text):
-                    Text(LocalizedStringKey(text))
+                    Text(LocalizedStringKey(formatBulletPoints(text)))
                         .font(.system(size: 16.5, weight: .regular, design: .default))
                         .lineSpacing(6.5)
                         .foregroundStyle(Color.black.opacity(0.92))
@@ -251,6 +251,22 @@ struct RichMarkdownView: View {
                 }
             }
         }
+    }
+
+    private func formatBulletPoints(_ text: String) -> String {
+        let lines = text.components(separatedBy: "\n")
+        let formatted = lines.map { line -> String in
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+            if trimmed.hasPrefix("- ") {
+                let indent = String(line.prefix(while: { $0 == " " || $0 == "\t" }))
+                return "\(indent)• \(trimmed.dropFirst(2))"
+            } else if trimmed.hasPrefix("* ") && !trimmed.hasPrefix("**") {
+                let indent = String(line.prefix(while: { $0 == " " || $0 == "\t" }))
+                return "\(indent)• \(trimmed.dropFirst(2))"
+            }
+            return line
+        }
+        return formatted.joined(separator: "\n")
     }
 }
 
@@ -272,19 +288,20 @@ struct MarkdownHeadingView: View {
     }
 }
 
-// MARK: - Markdown White Code Card with Copy Button & Syntax Highlighting
+// MARK: - Markdown White Code Card Matching Image 1 (ChatGPT Style 100%)
+// Clean white rounded card with header language label and single copy icon on top-right (NO horizontal divider).
 struct MarkdownCodeCard: View {
     let language: String
     let code: String
     @State private var copied: Bool = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            // Code Card Header: Language Tag + Copy Button
+        VStack(alignment: .leading, spacing: 8) {
+            // Header: Language Name on left, Single Copy Icon on right (NO divider!)
             HStack {
-                Text(language.isEmpty ? "CODE" : language.uppercased())
-                    .font(.system(size: 11, weight: .bold, design: .monospaced))
-                    .foregroundStyle(Color.secondary)
+                Text(cleanLanguageName(language))
+                    .font(.system(size: 13.5, weight: .semibold))
+                    .foregroundStyle(Color.black.opacity(0.85))
 
                 Spacer()
 
@@ -292,40 +309,41 @@ struct MarkdownCodeCard: View {
                     UIPasteboard.general.string = code
                     let haptic = UIImpactFeedbackGenerator(style: .light)
                     haptic.impactOccurred()
-                    withAnimation { copied = true }
+                    withAnimation(.easeInOut(duration: 0.2)) { copied = true }
                     DispatchQueue.main.asyncAfter(deadline: .now() + 1.8) {
-                        withAnimation { copied = false }
+                        withAnimation(.easeInOut(duration: 0.2)) { copied = false }
                     }
                 } label: {
-                    HStack(spacing: 4) {
-                        Image(systemName: copied ? "checkmark" : "doc.on.doc")
-                            .font(.system(size: 11))
-                        Text(copied ? "Đã sao chép" : "Sao chép")
-                            .font(.system(size: 11, weight: .medium))
-                    }
-                    .foregroundStyle(copied ? Color.green : Color.secondary)
+                    Image(systemName: copied ? "checkmark" : "doc.on.doc")
+                        .font(.system(size: 13.5, weight: .medium))
+                        .foregroundStyle(copied ? Color.green : Color.black.opacity(0.65))
+                        .padding(4)
                 }
             }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 8)
-            .background(Color(.systemGray6).opacity(0.6))
+            .padding(.horizontal, 16)
+            .padding(.top, 12)
 
-            Divider()
-
-            // Code Content: Smaller font size (11.5pt), Syntax Highlighting, scrollable horizontally
+            // Code Content: Syntax Highlighted matching Image 1
             ScrollView(.horizontal, showsIndicators: false) {
                 HighlightedCodeView(code: code)
-                    .padding(14)
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 14)
             }
         }
         .background(Color.white)
-        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
                 .strokeBorder(Color.black.opacity(0.08), lineWidth: 1)
         )
-        .shadow(color: Color.black.opacity(0.04), radius: 6, x: 0, y: 3)
-        .padding(.vertical, 4)
+        .shadow(color: Color.black.opacity(0.03), radius: 6, x: 0, y: 2)
+        .padding(.vertical, 6)
+    }
+
+    private func cleanLanguageName(_ lang: String) -> String {
+        let trimmed = lang.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.isEmpty { return "Code" }
+        return trimmed.prefix(1).uppercased() + trimmed.dropFirst().lowercased()
     }
 }
 
@@ -357,7 +375,7 @@ struct HighlightedCodeView: View {
         // Full line comment
         if trimmed.hasPrefix("//") || trimmed.hasPrefix("#") {
             return Text(line)
-                .font(.system(size: 11.5, weight: .regular, design: .monospaced))
+                .font(.system(size: 12.5, weight: .regular, design: .monospaced))
                 .foregroundColor(Color(red: 0.55, green: 0.58, blue: 0.62))
         }
 
@@ -375,24 +393,24 @@ struct HighlightedCodeView: View {
         for token in tokens {
             if keywords.contains(token) {
                 lineText = lineText + Text(token)
-                    .font(.system(size: 11.5, weight: .bold, design: .monospaced))
-                    .foregroundColor(Color(red: 0.65, green: 0.15, blue: 0.75)) // Purple
+                    .font(.system(size: 12.5, weight: .bold, design: .monospaced))
+                    .foregroundColor(Color(red: 0.72, green: 0.18, blue: 0.65)) // Purple/Pink
             } else if (token.hasPrefix("\"") && token.hasSuffix("\"") && token.count >= 2) ||
                       (token.hasPrefix("'") && token.hasSuffix("'") && token.count >= 2) {
                 lineText = lineText + Text(token)
-                    .font(.system(size: 11.5, weight: .regular, design: .monospaced))
-                    .foregroundColor(Color(red: 0.18, green: 0.58, blue: 0.32)) // Green string
+                    .font(.system(size: 12.5, weight: .regular, design: .monospaced))
+                    .foregroundColor(Color(red: 0.85, green: 0.22, blue: 0.22)) // Crimson/Red
             } else if Double(token) != nil {
                 lineText = lineText + Text(token)
-                    .font(.system(size: 11.5, weight: .regular, design: .monospaced))
-                    .foregroundColor(Color(red: 0.85, green: 0.45, blue: 0.12)) // Orange number
+                    .font(.system(size: 12.5, weight: .regular, design: .monospaced))
+                    .foregroundColor(Color(red: 0.52, green: 0.22, blue: 0.85)) // Purple/Blue Number
             } else if token.first?.isUppercase == true && token.count > 1 {
                 lineText = lineText + Text(token)
-                    .font(.system(size: 11.5, weight: .semibold, design: .monospaced))
+                    .font(.system(size: 12.5, weight: .semibold, design: .monospaced))
                     .foregroundColor(Color(red: 0.12, green: 0.45, blue: 0.85)) // Blue type
             } else {
                 lineText = lineText + Text(token)
-                    .font(.system(size: 11.5, weight: .regular, design: .monospaced))
+                    .font(.system(size: 12.5, weight: .regular, design: .monospaced))
                     .foregroundColor(Color.black.opacity(0.88))
             }
         }
