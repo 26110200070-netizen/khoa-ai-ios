@@ -50,6 +50,7 @@ public struct MainChatView: View {
 
     // Scroll States (Only visible when scrolled up away from bottom)
     @State private var showScrollToBottomButton: Bool = false
+    @State private var isAtBottom: Bool = true
 
     @FocusState private var isInputFocused: Bool
 
@@ -361,8 +362,11 @@ public struct MainChatView: View {
         }
     }
 
-    // MARK: - Chat Scroll View with Downward Scroll-To-Bottom Arrow (Requirement 3)
-    // Only visible when scrolled up, disappears when at the bottom.
+    // MARK: - Chat Scroll View Matching gpt.mp4
+    // 1. When user sends a message, scrolls so old messages are pushed UP and the new user message sits at the top.
+    // 2. While user is at the bottom, auto-scrolls down as AI streams text.
+    // 3. If user scrolls up even slightly, auto-scroll stops immediately so user can read.
+    // 4. Downward arrow shows only when scrolled up; tapping it scrolls back to bottom and resumes auto-scroll.
     private func chatScrollView(geometry: GeometryProxy) -> some View {
         ScrollViewReader { proxy in
             ZStack(alignment: .bottomTrailing) {
@@ -393,12 +397,35 @@ public struct MainChatView: View {
                 .onPreferenceChange(ChatScrollOffsetKey.self) { maxY in
                     // maxY is the Y position of the bottom anchor in the scroll view viewport.
                     // When scrolled up, maxY is significantly greater than geometry.size.height.
-                    // When near or at the bottom, maxY is close to viewport height.
-                    let isScrolledUp = maxY > (geometry.size.height + 70)
+                    let isScrolledUp = maxY > (geometry.size.height + 60)
+                    isAtBottom = !isScrolledUp
                     if showScrollToBottomButton != isScrolledUp {
                         withAnimation(.easeInOut(duration: 0.2)) {
                             showScrollToBottomButton = isScrolledUp
                         }
+                    }
+                }
+                .onChange(of: service.messages.count) { _ in
+                    // When user sends a message: smoothly scroll so that old messages are pushed UP
+                    // and the new message is comfortably placed at the top (Matching gpt.mp4 video)
+                    if let lastUserMsg = service.messages.last(where: { $0.isUser }) {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                            withAnimation(.spring(response: 0.45, dampingFraction: 0.85)) {
+                                proxy.scrollTo(lastUserMsg.id, anchor: .top)
+                            }
+                        }
+                    }
+                }
+                .onChange(of: service.messages.last?.text) { _ in
+                    // While AI streams text: ONLY auto-scroll if user is standing at the bottom!
+                    // If user scrolled up even slightly, DO NOT auto-scroll!
+                    if isAtBottom && service.isGenerating {
+                        proxy.scrollTo("BOTTOM_ANCHOR", anchor: .bottom)
+                    }
+                }
+                .onChange(of: service.messages.last?.thinkingText) { _ in
+                    if isAtBottom && service.isGenerating {
+                        proxy.scrollTo("BOTTOM_ANCHOR", anchor: .bottom)
                     }
                 }
                 .scrollDismissesKeyboard(.interactively)
@@ -412,6 +439,7 @@ public struct MainChatView: View {
                     Button {
                         let haptic = UIImpactFeedbackGenerator(style: .light)
                         haptic.impactOccurred()
+                        isAtBottom = true
                         withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
                             proxy.scrollTo("BOTTOM_ANCHOR", anchor: .bottom)
                             showScrollToBottomButton = false
@@ -741,6 +769,8 @@ public struct MainChatView: View {
         if showAttachmentDrawer {
             withAnimation { showAttachmentDrawer = false }
         }
+        isAtBottom = true
+        showScrollToBottomButton = false
 
         Task {
             var attachmentCtx = ""

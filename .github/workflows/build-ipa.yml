@@ -60,25 +60,23 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/heads/main') || startsWith(github.ref, 'refs/heads/master') || github.event_name == 'workflow_dispatch'
         with:
-          tag_name: v1.0.7
-          name: "khoa.ai iOS v1.0.7 (Unsigned IPA)"
+          tag_name: v1.0.8
+          name: "khoa.ai iOS v1.0.8 (Unsigned IPA)"
           body: |
-            ### 🚀 khoa.ai v1.0.7 - Bảng Markdown ChatGPT Chuẩn 100%, Sửa lỗi FINISHED & Học dữ liệu dulieukhoaai
+            ### 🚀 khoa.ai v1.0.8 - Cuộn mượt chuẩn Video GPT, Cài đặt tính cách AI & Xóa tất cả lịch sử
             Được sáng lập và phát triển bởi **Khoa Dev**.
 
-            #### ✨ Các cải tiến nổi bật trong phiên bản 1.0.7:
-            1. 📊 **Thiết kế Bảng Markdown Chuẩn 100% ChatGPT (Ảnh 2)**:
-               - Loại bỏ hoàn toàn khung hộp bao bọc và thanh công cụ "Bảng" rườm rà.
-               - Bỏ các đường kẻ dọc ngăn cách cột thô cứng; chỉ sử dụng các đường phân cách ngang thanh mảnh, mềm mại giữa các hàng.
-               - Lọc sạch toàn bộ ký tự `** **` thô trong các ô bảng, giúp chữ hiển thị tự nhiên, ngay ngắn, thoáng đãng.
-            2. ⚡ **Sửa triệt để lỗi hiện chữ 'FINISHED' cuối câu trả lời**:
-               - Khắc phục lỗi rò rỉ token trạng thái fragment SSE (`response/status`) từ máy chủ DeepSeek vào nội dung tin nhắn người dùng.
-            3. 💬 **Chào hỏi tự nhiên, không tự giới thiệu tên thừa thãi**:
-               - Khi người dùng chào hỏi bình thường ("Chào bạn", "Xin chào", "Hello"), AI chào lại thân thiện, ấm áp và ngắn gọn như ChatGPT.
-               - Chỉ khi người dùng chủ động hỏi "Bạn là ai?" hoặc "Ai tạo ra bạn?", AI mới khẳng định danh tính là khoa.ai do Khoa Dev tạo ra.
-            4. 🧠 **Học quy chuẩn từ dulieukhoaai.md & phong cách ChatGPT**:
-               - Không lạm dụng gạch đầu dòng (-); diễn đạt bằng các đoạn văn tự nhiên, mạch lạc, kết nối ý tưởng mượt mà.
-               - Trình bày Markdown rõ ràng, chuyên nghiệp; trả lời thẳng vào trọng tâm yêu cầu.
+            #### ✨ Các cải tiến nổi bật trong phiên bản 1.0.8:
+            1. 🎬 **Trải nghiệm cuộn trang chuẩn xác như video ChatGPT (gpt.mp4)**:
+               - **Tự động đẩy tin nhắn cũ lên**: Khi người dùng gửi tin nhắn tiếp theo, màn hình tự động cuộn đẩy tin nhắn cũ lên trên, đưa tin nhắn mới của người dùng lên đầu màn hình với không gian thoáng đãng chờ AI phản hồi.
+               - **Tự động cuộn thông minh**: Khi người dùng ở dưới cùng đoạn chat, văn bản AI stream đến đâu tự động cuộn theo đến đó.
+               - **Bảo vệ đọc khi kéo lên**: Chỉ cần người dùng vuốt nhẹ lên trên để đọc lại tin nhắn trước, tính năng tự động cuộn sẽ lập tức dừng lại, không làm giật màn hình. Nhấn nút mũi tên xuống để trở lại đáy và kích hoạt lại tự động cuộn.
+            2. 🧠 **Cài đặt Tính cách AI & Dạy khoa.ai (AIPersonaSettingsView)**:
+               - Màn hình cài đặt mới cho phép người dùng tùy ý dạy AI cách xưng hô, văn phong hoặc kiến thức cá nhân riêng biệt.
+               - Tích hợp các gợi ý nhanh (Xưng hô em - anh, Senior Developer, Ngắn gọn trọng tâm...).
+               - Dữ liệu được lưu trữ an toàn và nạp trực tiếp vào chỉ dẫn hệ thống của DeepSeek.
+            3. 🗑️ **Nút Xóa tất cả cuộc trò chuyện trong Lịch sử**:
+               - Thêm nút xóa nhanh tiện lợi ngay tại mục Lịch sử với hộp thoại xác nhận an toàn, giúp dọn sạch các đoạn chat khi cần.
 
             #### ✨ Các cải tiến và sửa lỗi trong phiên bản 1.0.4:
             1. 🌐 **Web Search luôn bật mặc định**, Suy nghĩ (DeepThink) mặc định là `false`.

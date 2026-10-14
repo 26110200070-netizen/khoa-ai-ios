@@ -23,6 +23,7 @@ public struct HistorySidebarView: View {
     var onOpenSettings: () -> Void
 
     @State private var searchText: String = ""
+    @State private var showClearAllAlert: Bool = false
 
     public init(
         isOpen: Binding<Bool>,
@@ -82,13 +83,32 @@ public struct HistorySidebarView: View {
                 .padding(.horizontal, 16)
                 .padding(.bottom, 16)
 
-                // Section Header: "Hôm nay" with slider icon (Matching Image 1)
-                HStack {
+                // Section Header: "Hôm nay" with Clear All Chats button
+                HStack(spacing: 8) {
                     Text("Hôm nay")
                         .font(.system(size: 15, weight: .medium))
                         .foregroundStyle(Color.black.opacity(0.65))
 
                     Spacer()
+
+                    // Clear All Chats Button
+                    if !conversationManager.sessions.isEmpty {
+                        Button {
+                            showClearAllAlert = true
+                        } label: {
+                            HStack(spacing: 4) {
+                                Image(systemName: "trash")
+                                    .font(.system(size: 12))
+                                Text("Xóa tất cả")
+                                    .font(.system(size: 12.5, weight: .medium))
+                            }
+                            .foregroundStyle(Color.red.opacity(0.85))
+                            .padding(.horizontal, 9)
+                            .padding(.vertical, 4)
+                            .background(Color.red.opacity(0.08))
+                            .clipShape(Capsule())
+                        }
+                    }
 
                     Button {
                         let haptic = UIImpactFeedbackGenerator(style: .light)
@@ -183,6 +203,18 @@ public struct HistorySidebarView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color(red: 0.99, green: 0.99, blue: 0.99))
         .ignoresSafeArea(.all, edges: .vertical)
+        .alert("Xóa tất cả đoạn chat?", isPresented: $showClearAllAlert) {
+            Button("Hủy", role: .cancel) {}
+            Button("Xóa tất cả", role: .destructive) {
+                let haptic = UIImpactFeedbackGenerator(style: .medium)
+                haptic.impactOccurred()
+                conversationManager.clearAll()
+                service.resetConversation()
+                onNewChat()
+            }
+        } message: {
+            Text("Toàn bộ lịch sử trò chuyện sẽ bị xóa vĩnh viễn. Thao tác này không thể hoàn tác.")
+        }
     }
 
     // Single Session Card (Matching Image 1)

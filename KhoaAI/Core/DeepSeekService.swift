@@ -167,12 +167,22 @@ public final class DeepSeekService: ObservableObject {
             // Step 2 & 3: Fetch and solve PoW challenge
             let powHeader = try await solvePoWChallenge(session: session)
 
-            // Step 4: System prompt with guidelines learned from dulieukhoaai.md & ChatGPT style
+            // Step 4: System prompt with guidelines learned from dulieukhoaai.md, ChatGPT style & User Persona
             var fullPromptPayload = ""
             if !attachmentContext.isEmpty {
                 fullPromptPayload += "\(attachmentContext)\n\n"
             }
             fullPromptPayload += trimmed
+
+            let customInstructions = UserDefaults.standard.string(forKey: "khoa_ai_custom_instructions")?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            var customSection = ""
+            if !customInstructions.isEmpty {
+                customSection = """
+
+4. CHỈ DẪN TÍNH CÁCH & TRI THỨC NGƯỜI DÙNG DẠY RIÊNG (BẮT BUỘC TUÂN THEO):
+\(customInstructions)
+"""
+            }
 
             let finalPrompt: String
             if messagesInCurrentSession == 0 {
@@ -196,7 +206,7 @@ public final class DeepSeekService: ObservableObject {
 
 3. Thái độ & Trí tuệ (dulieukhoaai.md):
 - Trả lời thẳng vào trọng tâm câu hỏi, không dài dòng giải thích thừa thãi hay nói các câu sáo rỗng.
-- Luôn giữ thái độ tôn trọng, tích cực, hữu ích, văn minh và an toàn tối đa cho mọi người dùng.]
+- Luôn giữ thái độ tôn trọng, tích cực, hữu ích, văn minh và an toàn tối đa cho mọi người dùng.\(customSection)]
 
 Người dùng: \(fullPromptPayload)
 """

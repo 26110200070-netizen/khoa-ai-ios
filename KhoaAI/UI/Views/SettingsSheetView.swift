@@ -14,6 +14,7 @@ public struct SettingsSheetView: View {
     @ObservedObject private var service = DeepSeekService.shared
 
     @State private var showLoginSheet: Bool = false
+    @AppStorage("khoa_ai_custom_instructions") private var customInstructions: String = ""
 
     public init() {}
 
@@ -39,6 +40,31 @@ public struct SettingsSheetView: View {
                         }
                     }
                     .padding(.vertical, 8)
+                }
+
+                // Section: Cài đặt tính cách AI & Dạy AI
+                Section(
+                    header: Text("Tính cách AI & Dạy khoa.ai"),
+                    footer: Text("Tùy chỉnh cách xưng hô, phong cách phản hồi hoặc các kiến thức riêng bạn muốn khoa.ai ghi nhớ và tuân theo.")
+                ) {
+                    NavigationLink {
+                        AIPersonaSettingsView()
+                    } label: {
+                        Label {
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text("Cài đặt tính cách & Dạy AI")
+                                    .font(.system(size: 15, weight: .medium))
+                                    .foregroundStyle(Color.black.opacity(0.9))
+                                Text(customInstructions.isEmpty ? "Mặc định (Ấm áp, thông minh)" : customInstructions)
+                                    .font(.system(size: 12.5))
+                                    .foregroundStyle(Color.secondary)
+                                    .lineLimit(1)
+                            }
+                        } icon: {
+                            Image(systemName: "brain.head.profile")
+                                .foregroundStyle(Color.purple)
+                        }
+                    }
                 }
 
                 // Section 2: DeepSeek Account Status
