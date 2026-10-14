@@ -60,25 +60,24 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/heads/main') || startsWith(github.ref, 'refs/heads/master') || github.event_name == 'workflow_dispatch'
         with:
-          tag_name: v1.0.0
-          name: "khoa.ai iOS v1.0.0 (Unsigned IPA)"
+          tag_name: v1.0.1
+          name: "khoa.ai iOS v1.0.1 (Unsigned IPA)"
           body: |
-            ### 🏜️ khoa.ai - Ứng dụng iOS AI Chat phong cách Liquid Glass
+            ### 🏜️ khoa.ai v1.0.1 - Cập nhật Light UI & Khắc phục kết nối DeepSeek
             Được phát triển bởi **Khoa Dev**.
             
-            - **Giao diện**: Chuẩn Liquid Glass kết hợp chủ đề Sa Mạc & AI.
-            - **Tính năng**:
-              - Chat trực tiếp với tài khoản DeepSeek cá nhân không mất phí API.
-              - Đăng nhập Safari WebKit nội bộ an toàn, tự động vượt AWS WAF.
-              - Lá chắn chống khóa/mute tài khoản: pacing gửi tin người dùng, tái sử dụng phiên tự nhiên, headers chuẩn thiết bị di động.
-              - Giải Proof-of-Work (PoW) `DeepSeekHashV1` trực tiếp trên máy bằng WebAssembly cực nhanh (150ms).
-              - Hỗ trợ xem suy nghĩ (DeepThink) và tìm kiếm web (Web Search).
-              - Tin nhắn AI tự do không bị đóng hộp, chữ tràn viền đọc mượt mà.
+            - ☀️ **Giao diện chuẩn Light UI**: Trắng sáng tinh khôi, hiệu ứng Liquid Glass kính nổi sắc nét, đúng chuẩn ảnh mẫu.
+            - ⬇️ **Tự động hạ thanh nhập liệu**: Chạm vào bất kỳ điểm nào trên màn hình hoặc cuộn tin nhắn để ẩn bàn phím và hạ thanh nhập liệu xuống mượt mà.
+            - ⚡ **Khắc phục kết nối & Sẵn sàng Chat**:
+              - Nhúng trực tiếp bộ giải WebAssembly `DeepSeekHashV1` vào cây hiển thị cửa sổ, không bao giờ bị treo hay chờ đợi.
+              - Tự động nạp sẵn phiên DeepSeek mẫu đã vượt AWS WAF để có thể chat ngay lập tức sau khi cài đặt.
+              - Hỗ trợ thêm tab "Nạp phiên / Token thủ công" và sửa lỗi cửa sổ popup Google OAuth.
+              - Báo cáo trạng thái theo thời gian thực (Đang kết nối, Đang giải PoW, Đang sinh câu trả lời).
             
             #### 📱 Hướng dẫn cài đặt qua ESign:
             1. Tải file `khoa_ai.ipa` đính kèm bên dưới về iPhone.
             2. Mở ứng dụng **ESign** trên máy.
-            3. Chọn file `khoa_ai.ipa`, chọn chứng chỉ ký của bạn (hoặc chứng chỉ doanh nghiệp/chứng chỉ tự ký) và nhấn **Sign & Install**.
+            3. Chọn file `khoa_ai.ipa`, chọn chứng chỉ ký của bạn và nhấn **Sign & Install**.
           files: khoa_ai.ipa
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

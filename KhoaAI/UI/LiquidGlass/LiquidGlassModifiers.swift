@@ -112,30 +112,35 @@ public struct LiquidGlassButtonModifier: ViewModifier {
                             .shadow(color: Color.blue.opacity(0.45), radius: 8, x: 0, y: 4)
                     } else {
                         Circle()
-                            .fill(.ultraThinMaterial)
+                            .fill(Color.white.opacity(0.88))
+                            .background(.ultraThinMaterial)
+                            .clipShape(Circle())
 
+                        // Specular glass shine
                         Circle()
                             .fill(
                                 LinearGradient(
                                     colors: [
-                                        Color.white.opacity(0.45),
-                                        Color.white.opacity(0.10)
+                                        Color.white,
+                                        Color.white.opacity(0.2)
                                     ],
                                     startPoint: .topLeading,
                                     endPoint: .bottomTrailing
                                 )
                             )
 
+                        // Dual rim highlight for liquid refraction
                         Circle()
                             .strokeBorder(
                                 LinearGradient(
-                                    colors: [Color.white.opacity(0.8), Color.white.opacity(0.2)],
+                                    colors: [Color.white, Color.black.opacity(0.12)],
                                     startPoint: .topLeading,
                                     endPoint: .bottomTrailing
                                 ),
                                 lineWidth: 1.0
                             )
-                            .shadow(color: Color.black.opacity(0.06), radius: 6, x: 0, y: 3)
+                            .shadow(color: Color.black.opacity(0.07), radius: 8, x: 0, y: 3)
+                            .shadow(color: Color.black.opacity(0.02), radius: 2, x: 0, y: 1)
                     }
                 }
             }

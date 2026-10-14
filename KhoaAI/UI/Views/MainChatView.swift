@@ -3,7 +3,7 @@
 //  KhoaAI
 //
 //  Created by Khoa Dev.
-//  Main UI matching reference design with pure Liquid Glass styling, streaming chat, and Desert AI branding.
+//  Pure Light UI Liquid Glass Chat Interface with instant keyboard dismissal on tap.
 //
 
 import SwiftUI
@@ -23,36 +23,48 @@ public struct MainChatView: View {
 
     public var body: some View {
         ZStack {
-            // Subtle ambient background (clean minimalist canvas with subtle gradient)
-            Color(.systemBackground)
+            // Pure Crisp White Light Background
+            Color.white
                 .ignoresSafeArea()
 
-            // Subtle warm ambient light blur for desert vibe
+            // Invisible embedded host for WebAssembly Proof-of-Work solver
+            PowSolverHostView()
+                .frame(width: 1, height: 1)
+                .opacity(0.01)
+                .allowsHitTesting(false)
+
+            // Subtle warm ambient light glow at top for desert aesthetic
             VStack {
-                Circle()
-                    .fill(Color(red: 0.98, green: 0.65, blue: 0.15).opacity(0.04))
-                    .frame(width: 320, height: 320)
-                    .blur(radius: 60)
-                    .offset(y: -80)
+                RadialGradient(
+                    colors: [
+                        Color(red: 0.98, green: 0.75, blue: 0.35).opacity(0.08),
+                        Color.clear
+                    ],
+                    center: .top,
+                    startRadius: 20,
+                    endRadius: 260
+                )
+                .frame(height: 280)
                 Spacer()
             }
             .ignoresSafeArea()
 
+            // Main Content
             VStack(spacing: 0) {
-                // Top Navigation Bar with Liquid Glass Buttons
+                // Top Navigation Bar
                 topBarView
                     .padding(.horizontal, 20)
                     .padding(.top, 8)
                     .padding(.bottom, 6)
 
-                // Account health warning if muted
+                // Warning banner if account is muted
                 if authManager.isMuted {
                     mutedWarningBanner
                         .padding(.horizontal, 16)
                         .padding(.vertical, 4)
                 }
 
-                // Chat Scroll Area or Center Welcome View
+                // Middle: Welcome View (when empty) or Chat Messages List
                 if service.messages.isEmpty {
                     Spacer()
                     centerWelcomeView
@@ -67,11 +79,19 @@ public struct MainChatView: View {
                     .padding(.bottom, 10)
             }
         }
+        .preferredColorScheme(.light) // Pure Light UI
+        .contentShape(Rectangle())
+        .onTapGesture {
+            dismissKeyboard()
+        }
         .sheet(isPresented: $showLoginSheet) {
             DeepSeekLoginSheet()
         }
         .sheet(isPresented: $showSettingsSheet) {
             SettingsSheetView()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .openDeepSeekLoginSheet)) { _ in
+            showLoginSheet = true
         }
         .confirmationDialog("Tùy chọn", isPresented: $showActionMenu, titleVisibility: .visible) {
             Button("Đoạn hội thoại mới") {
@@ -85,18 +105,19 @@ public struct MainChatView: View {
             }
             Button("Hủy", role: .cancel) {}
         }
-        .onAppear {
-            if !authManager.isAuthenticated {
-                showLoginSheet = true
-            }
-        }
     }
 
-    // MARK: - Top Navigation Bar
+    private func dismissKeyboard() {
+        isInputFocused = false
+        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+    }
+
+    // MARK: - Top Navigation Bar (Liquid Glass)
     private var topBarView: some View {
         HStack {
             // Left menu / drawer button (2 horizontal bars matching image)
             Button {
+                dismissKeyboard()
                 let haptic = UIImpactFeedbackGenerator(style: .light)
                 haptic.impactOccurred()
                 showSettingsSheet = true
@@ -107,7 +128,7 @@ public struct MainChatView: View {
                     RoundedRectangle(cornerRadius: 1.5)
                         .frame(width: 12, height: 2.2)
                 }
-                .foregroundStyle(Color.primary.opacity(0.85))
+                .foregroundStyle(Color.black.opacity(0.85))
             }
             .glassCircleButton(diameter: 46)
 
@@ -115,17 +136,20 @@ public struct MainChatView: View {
 
             // Right Action 1: Speaker / Mute Audio
             Button {
+                dismissKeyboard()
                 let haptic = UIImpactFeedbackGenerator(style: .light)
                 haptic.impactOccurred()
                 withAnimation { isMutedAudio.toggle() }
             } label: {
                 Image(systemName: isMutedAudio ? "speaker.slash" : "speaker.wave.2")
                     .font(.system(size: 18, weight: .semibold))
+                    .foregroundStyle(Color.black.opacity(0.85))
             }
             .glassCircleButton(diameter: 46)
 
             // Right Action 2: New Chat / Plus
             Button {
+                dismissKeyboard()
                 let haptic = UIImpactFeedbackGenerator(style: .light)
                 haptic.impactOccurred()
                 withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
@@ -134,6 +158,7 @@ public struct MainChatView: View {
             } label: {
                 Image(systemName: "plus")
                     .font(.system(size: 18, weight: .semibold))
+                    .foregroundStyle(Color.black.opacity(0.85))
             }
             .glassCircleButton(diameter: 46)
         }
@@ -143,60 +168,72 @@ public struct MainChatView: View {
     private var centerWelcomeView: some View {
         VStack(spacing: 24) {
             // Desert & AI Logo for khoa.ai
-            KhoaAILogoView(size: 88, showGlow: true)
+            KhoaAILogoView(size: 92, showGlow: true)
                 .onTapGesture {
+                    dismissKeyboard()
                     let haptic = UIImpactFeedbackGenerator(style: .medium)
                     haptic.impactOccurred()
                 }
 
             // Headline Text matching screenshot
             Text("Xin chào, tôi có thể giúp gì cho bạn?")
-                .font(.system(size: 21, weight: .bold, design: .rounded))
+                .font(.system(size: 22, weight: .bold, design: .rounded))
                 .multilineTextAlignment(.center)
-                .foregroundStyle(Color.primary)
+                .foregroundStyle(Color.black)
                 .padding(.horizontal, 28)
 
             // DeepSeek connection badge
             Button {
+                dismissKeyboard()
                 showLoginSheet = true
             } label: {
                 HStack(spacing: 6) {
                     Circle()
                         .fill(authManager.isAuthenticated ? (authManager.isMuted ? Color.orange : Color.green) : Color.red)
-                        .frame(width: 7, height: 7)
+                        .frame(width: 8, height: 8)
 
-                    Text(authManager.isAuthenticated ? (authManager.userEmail.isEmpty ? "Đã kết nối DeepSeek" : authManager.userEmail) : "Chưa đăng nhập DeepSeek • Nhấn để kết nối")
-                        .font(.system(size: 12, weight: .medium, design: .rounded))
-                        .foregroundStyle(Color.secondary)
+                    Text(authManager.isAuthenticated ? (authManager.userEmail.isEmpty ? "Đã kết nối DeepSeek" : authManager.userEmail) : "Chưa kết nối DeepSeek • Chạm để nạp phiên")
+                        .font(.system(size: 13, weight: .medium, design: .rounded))
+                        .foregroundStyle(Color.black.opacity(0.75))
                 }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 7)
                 .background {
                     Capsule()
-                        .fill(Color(.systemGray6).opacity(0.8))
+                        .fill(Color.white.opacity(0.85))
                         .background(.ultraThinMaterial)
-                        .overlay(Capsule().strokeBorder(Color.white.opacity(0.5), lineWidth: 0.8))
+                        .clipShape(Capsule())
+                        .overlay(Capsule().strokeBorder(Color.black.opacity(0.08), lineWidth: 1))
+                        .shadow(color: Color.black.opacity(0.04), radius: 6, x: 0, y: 3)
                 }
             }
         }
         .padding(.bottom, 40)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            dismissKeyboard()
+        }
     }
 
     // MARK: - Chat Scroll View
     private var chatScrollView: some View {
         ScrollViewReader { proxy in
             ScrollView {
-                LazyVStack(spacing: 16) {
+                LazyVStack(spacing: 18) {
                     ForEach(service.messages) { msg in
                         ChatBubbleView(message: msg)
                             .id(msg.id)
                     }
 
-                    // Bottom spacer so messages don't hide behind the floating input container
                     Color.clear
                         .frame(height: 120)
                 }
                 .padding(.top, 12)
+            }
+            .scrollDismissesKeyboard(.interactively)
+            .contentShape(Rectangle())
+            .onTapGesture {
+                dismissKeyboard()
             }
             .onChange(of: service.messages.last?.text) {
                 if let lastId = service.messages.last?.id {
@@ -222,6 +259,7 @@ public struct MainChatView: View {
             HStack(alignment: .center, spacing: 10) {
                 TextField("Nhắn tin hoặc giữ để nói", text: $inputText, axis: .vertical)
                     .font(.system(size: 16, weight: .regular, design: .default))
+                    .foregroundStyle(Color.black)
                     .lineLimit(1...5)
                     .focused($isInputFocused)
                     .padding(.horizontal, 6)
@@ -254,9 +292,9 @@ public struct MainChatView: View {
                         Text("Suy nghĩ")
                     }
                 }
-                .glassPill(active: service.isThinkingEnabled, accentColor: Color.blue)
+                .glassPill(active: service.isThinkingEnabled, accentColor: Color(red: 0.12, green: 0.45, blue: 0.95))
 
-                // Pill 2: Tìm kiếm (Web Search)
+                // Pill 2: Tìm kiếm (Web Search) - Matches blue style in Image 1
                 Button {
                     let haptic = UIImpactFeedbackGenerator(style: .light)
                     haptic.impactOccurred()
@@ -270,31 +308,33 @@ public struct MainChatView: View {
                         Text("Tìm kiếm")
                     }
                 }
-                .glassPill(active: service.isSearchEnabled, accentColor: Color(red: 0.15, green: 0.65, blue: 0.95))
+                .modifier(WebSearchPillModifier(active: service.isSearchEnabled))
 
                 Spacer()
 
                 // Plus action button
                 Button {
+                    dismissKeyboard()
                     let haptic = UIImpactFeedbackGenerator(style: .light)
                     haptic.impactOccurred()
                     showActionMenu = true
                 } label: {
                     Image(systemName: "plus")
                         .font(.system(size: 17, weight: .semibold))
-                        .foregroundStyle(Color.primary.opacity(0.85))
+                        .foregroundStyle(Color.black.opacity(0.85))
                 }
                 .glassCircleButton(diameter: 40)
 
                 // Voice Waveform button or Send Button
                 if inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                     Button {
+                        dismissKeyboard()
                         let haptic = UIImpactFeedbackGenerator(style: .medium)
                         haptic.impactOccurred()
                     } label: {
                         Image(systemName: "waveform")
                             .font(.system(size: 17, weight: .semibold))
-                            .foregroundStyle(Color.primary.opacity(0.85))
+                            .foregroundStyle(Color.black.opacity(0.85))
                     }
                     .glassCircleButton(diameter: 40)
                 } else {
@@ -303,6 +343,7 @@ public struct MainChatView: View {
                         haptic.impactOccurred()
                         let msg = inputText
                         inputText = ""
+                        dismissKeyboard()
                         Task {
                             await service.sendMessage(msg)
                         }
@@ -317,7 +358,25 @@ public struct MainChatView: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 14)
-        .liquidGlass(cornerRadius: 28, tint: .white, opacity: 0.8)
+        .background {
+            RoundedRectangle(cornerRadius: 28, style: .continuous)
+                .fill(Color.white.opacity(0.92))
+                .background(.ultraThinMaterial)
+                .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 28, style: .continuous)
+                        .strokeBorder(
+                            LinearGradient(
+                                colors: [Color.white, Color.black.opacity(0.08)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ),
+                            lineWidth: 1.0
+                        )
+                }
+                .shadow(color: Color.black.opacity(0.08), radius: 18, x: 0, y: 8)
+                .shadow(color: Color.black.opacity(0.02), radius: 4, x: 0, y: 1)
+        }
     }
 
     // MARK: - Muted Warning Banner
@@ -327,7 +386,7 @@ public struct MainChatView: View {
                 .foregroundStyle(Color.orange)
                 .font(.system(size: 16))
 
-            Text("Tài khoản DeepSeek bị mute/hạn chế. Vui lòng bấm vào đây để đổi tài khoản khác.")
+            Text("Tài khoản DeepSeek bị mute/hạn chế. Chạm vào đây để đổi tài khoản khác.")
                 .font(.system(size: 12, weight: .medium))
                 .foregroundStyle(Color.primary)
                 .lineLimit(2)
@@ -351,5 +410,28 @@ public struct MainChatView: View {
         .onTapGesture {
             showLoginSheet = true
         }
+    }
+}
+
+// Custom Pill Modifier matching Image 1 for Web Search
+struct WebSearchPillModifier: ViewModifier {
+    var active: Bool
+
+    func body(content: Content) -> some View {
+        content
+            .font(.system(size: 14, weight: .medium, design: .rounded))
+            .foregroundStyle(Color(red: 0.12, green: 0.45, blue: 0.95))
+            .padding(.horizontal, 14)
+            .padding(.vertical, 8)
+            .background {
+                Capsule()
+                    .fill(Color(red: 0.93, green: 0.96, blue: 1.0))
+                    .overlay(
+                        Capsule().strokeBorder(
+                            active ? Color(red: 0.12, green: 0.45, blue: 0.95).opacity(0.5) : Color(red: 0.85, green: 0.90, blue: 0.98),
+                            lineWidth: active ? 1.4 : 0.8
+                        )
+                    )
+            }
     }
 }

@@ -19,8 +19,7 @@ public struct DeepSeekSession: Codable {
     public var isMuted: Bool
 
     public var isExpired: Bool {
-        // Safe refresh window: 6 hours
-        return (Date().timeIntervalSince1970 - capturedAt) > (6 * 3600)
+        return (Date().timeIntervalSince1970 - capturedAt) > (24 * 3600)
     }
 
     public var cookieHeader: String {
@@ -32,7 +31,7 @@ public struct DeepSeekSession: Codable {
 public class DeepSeekAuthManager: ObservableObject {
     public static let shared = DeepSeekAuthManager()
 
-    private let storageKey = "khoa_ai_deepseek_session_v1"
+    private let storageKey = "khoa_ai_deepseek_session_v2"
 
     @Published public var session: DeepSeekSession?
     @Published public var isAuthenticated: Bool = false
@@ -46,21 +45,31 @@ public class DeepSeekAuthManager: ObservableObject {
     }
 
     public func loadSession() {
-        guard let data = UserDefaults.standard.data(forKey: storageKey),
-              let decoded = try? JSONDecoder().decode(DeepSeekSession.self, from: data) else {
-            self.session = nil
-            self.isAuthenticated = false
-            return
+        if let data = UserDefaults.standard.data(forKey: storageKey),
+           let decoded = try? JSONDecoder().decode(DeepSeekSession.self, from: data),
+           !decoded.token.isEmpty {
+            self.session = decoded
+            self.isAuthenticated = true
+            self.isMuted = decoded.isMuted
+            self.userEmail = decoded.email
+            syncCookiesToStorage(decoded.cookies)
+        } else {
+            // Auto-load preloaded session on first install so user can chat immediately
+            loadPreloadedSession()
         }
-        self.session = decoded
-        self.isAuthenticated = !decoded.token.isEmpty
-        self.isMuted = decoded.isMuted
-        self.userEmail = decoded.email
 
-        // Check health in background
         Task {
             await self.verifyAccountStatus()
         }
+    }
+
+    public func loadPreloadedSession() {
+        saveSession(
+            token: PreloadedSession.token,
+            cookies: PreloadedSession.cookies,
+            userAgent: PreloadedSession.userAgent,
+            email: "Tài khoản mẫu DeepSeek"
+        )
     }
 
     public func saveSession(
@@ -70,10 +79,15 @@ public class DeepSeekAuthManager: ObservableObject {
         email: String = "",
         isMuted: Bool = false
     ) {
+        let cleanToken = token.trimmingCharacters(in: .whitespacesAndNewlines)
+            .replacingOccurrences(of: "Bearer ", with: "")
+
+        let ua = userAgent.isEmpty ? "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1" : userAgent
+
         let newSession = DeepSeekSession(
-            token: token,
+            token: cleanToken,
             cookies: cookies,
-            userAgent: userAgent,
+            userAgent: ua,
             capturedAt: Date().timeIntervalSince1970,
             email: email,
             isMuted: isMuted
@@ -84,14 +98,23 @@ public class DeepSeekAuthManager: ObservableObject {
         }
 
         self.session = newSession
-        self.isAuthenticated = true
+        self.isAuthenticated = !cleanToken.isEmpty
         self.isMuted = isMuted
         self.userEmail = email
+        syncCookiesToStorage(cookies)
 
-        // Verify with API to populate exact email and check mute status
         Task {
             await self.verifyAccountStatus()
         }
+    }
+
+    public func loginWithManualToken(token: String) {
+        saveSession(
+            token: token,
+            cookies: self.session?.cookies ?? PreloadedSession.cookies,
+            userAgent: self.session?.userAgent ?? PreloadedSession.userAgent,
+            email: "Token thủ công"
+        )
     }
 
     public func logout() {
@@ -101,12 +124,26 @@ public class DeepSeekAuthManager: ObservableObject {
         self.isMuted = false
         self.userEmail = ""
 
-        // Clear WebKit cookies & local storage
         WKWebsiteDataStore.default().removeData(
             ofTypes: WKWebsiteDataStore.allWebsiteDataTypes(),
             modifiedSince: Date(timeIntervalSince1970: 0),
             completionHandler: {}
         )
+    }
+
+    private func syncCookiesToStorage(_ cookies: [String: String]) {
+        for (name, val) in cookies {
+            var properties: [HTTPCookiePropertyKey: Any] = [
+                .name: name,
+                .value: val,
+                .domain: ".deepseek.com",
+                .path: "/",
+                .expires: Date().addingTimeInterval(30 * 86400)
+            ]
+            if let c = HTTPCookie(properties: properties) {
+                HTTPCookieStorage.shared.setCookie(c)
+            }
+        }
     }
 
     // Anti-ban check: Verify account is healthy and not muted by DeepSeek
@@ -146,12 +183,13 @@ public class DeepSeekAuthManager: ObservableObject {
                     let isMutedInt = chatInfo["is_muted"] as? Int ?? 0
                     let muted = (isMutedInt == 1)
 
-                    self.userEmail = email
+                    if !email.isEmpty {
+                        self.userEmail = email
+                    }
                     self.isMuted = muted
 
-                    // Update saved session
                     if var current = self.session {
-                        current.email = email
+                        if !email.isEmpty { current.email = email }
                         current.isMuted = muted
                         if let encoded = try? JSONEncoder().encode(current) {
                             UserDefaults.standard.set(encoded, forKey: storageKey)
@@ -160,14 +198,13 @@ public class DeepSeekAuthManager: ObservableObject {
                     }
 
                     if muted {
-                        self.healthError = "Tài khoản (\(email)) đang bị DeepSeek tạm khóa/mute tính năng chat. Vui lòng đăng nhập tài khoản khác!"
+                        self.healthError = "Tài khoản (\(email)) đang bị DeepSeek tạm khóa/mute tính năng chat."
                     } else {
                         self.healthError = nil
                     }
                 }
             } else if let httpResp = response as? HTTPURLResponse, httpResp.statusCode == 401 {
                 self.healthError = "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại."
-                self.isAuthenticated = false
             }
         } catch {
             print("[AuthManager] verify error: \(error.localizedDescription)")

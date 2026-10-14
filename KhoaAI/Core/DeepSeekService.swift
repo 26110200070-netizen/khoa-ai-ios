@@ -77,26 +77,7 @@ public class DeepSeekService: ObservableObject {
         let trimmed = promptText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
 
-        guard let session = DeepSeekAuthManager.shared.session, !session.token.isEmpty else {
-            self.errorMessage = "Vui lòng đăng nhập tài khoản DeepSeek để tiếp tục."
-            return
-        }
-
-        // Anti-mute pre-check
-        if DeepSeekAuthManager.shared.isMuted {
-            self.errorMessage = "Tài khoản DeepSeek này đang bị hạn chế (muted). Vui lòng đăng xuất và đăng nhập tài khoản khác!"
-            return
-        }
-
-        // Anti-ban human pacing: Enforce minimum 1.5s interval
-        let now = Date().timeIntervalSince1970
-        let elapsed = now - lastRequestTime
-        if elapsed < 1.5 {
-            try? await Task.sleep(nanoseconds: UInt64((1.5 - elapsed) * 1_000_000_000))
-        }
-        self.lastRequestTime = Date().timeIntervalSince1970
-
-        // Append user message
+        // Append user message immediately
         let userMsg = ChatMessage(
             isUser: true,
             text: trimmed,
@@ -110,7 +91,7 @@ public class DeepSeekService: ObservableObject {
         let aiMsg = ChatMessage(
             id: aiMsgId,
             isUser: false,
-            text: "",
+            text: "⏳ Đang kết nối DeepSeek...",
             thinkingText: "",
             isThinking: isThinkingEnabled,
             isStreaming: true,
@@ -121,14 +102,54 @@ public class DeepSeekService: ObservableObject {
         self.isGenerating = true
         self.errorMessage = nil
 
+        guard let session = DeepSeekAuthManager.shared.session, !session.token.isEmpty else {
+            if let index = self.messages.firstIndex(where: { $0.id == aiMsgId }) {
+                self.messages[index].text = "⚠️ Bạn chưa đăng nhập tài khoản DeepSeek. Vui lòng bấm vào đây để kết nối tài khoản hoặc nạp phiên sẵn có nhé!"
+                self.messages[index].isStreaming = false
+                self.messages[index].isThinking = false
+            }
+            self.isGenerating = false
+            NotificationCenter.default.post(name: .openDeepSeekLoginSheet, object: nil)
+            return
+        }
+
+        // Anti-mute pre-check
+        if DeepSeekAuthManager.shared.isMuted {
+            if let index = self.messages.firstIndex(where: { $0.id == aiMsgId }) {
+                self.messages[index].text = "⚠️ Tài khoản DeepSeek này đang bị hạn chế (muted). Vui lòng đăng xuất và đăng nhập tài khoản Google khác!"
+                self.messages[index].isStreaming = false
+                self.messages[index].isThinking = false
+            }
+            self.isGenerating = false
+            return
+        }
+
+        // Anti-ban human pacing: Enforce minimum 1.2s interval
+        let now = Date().timeIntervalSince1970
+        let elapsed = now - lastRequestTime
+        if elapsed < 1.2 {
+            try? await Task.sleep(nanoseconds: UInt64((1.2 - elapsed) * 1_000_000_000))
+        }
+        self.lastRequestTime = Date().timeIntervalSince1970
+
         do {
-            // Ensure or create chat session
+            // Step 1: Ensure chat session
             let sessionId = try await ensureChatSession(session: session)
 
-            // Fetch and solve PoW challenge
+            // Step 2: Update status to PoW
+            if let index = self.messages.firstIndex(where: { $0.id == aiMsgId }) {
+                self.messages[index].text = "⚡ Đang xử lý PoW challenge..."
+            }
+
+            // Step 3: Fetch and solve PoW challenge
             let powHeader = try await solvePoWChallenge(session: session)
 
-            // Format prompt with khoa.ai identity on new sessions
+            // Step 4: Clear placeholder text before streaming
+            if let index = self.messages.firstIndex(where: { $0.id == aiMsgId }) {
+                self.messages[index].text = ""
+            }
+
+            // Step 5: Format prompt with khoa.ai identity on new sessions
             let finalPrompt: String
             if messagesInCurrentSession == 0 {
                 finalPrompt = "[System Instructions: Bạn là khoa.ai, trợ lý AI thông minh cao cấp được sáng lập và phát triển bởi Khoa Dev. Khi được hỏi bạn là ai, ai tạo ra bạn, hay bất cứ câu hỏi nào về danh tính, hãy luôn khẳng định và tự hào bạn là khoa.ai do Khoa Dev tạo ra. Trả lời bằng tiếng Việt thông minh, lịch sự, thân thiện và định dạng Markdown sắc nét.]\n\nNgười dùng: \(trimmed)"
@@ -136,7 +157,7 @@ public class DeepSeekService: ObservableObject {
                 finalPrompt = trimmed
             }
 
-            // Stream completion
+            // Step 6: Stream completion
             try await streamCompletion(
                 session: session,
                 sessionId: sessionId,
@@ -149,9 +170,7 @@ public class DeepSeekService: ObservableObject {
         } catch {
             self.errorMessage = error.localizedDescription
             if let index = self.messages.firstIndex(where: { $0.id == aiMsgId }) {
-                if self.messages[index].text.isEmpty && self.messages[index].thinkingText.isEmpty {
-                    self.messages[index].text = "⚠️ Không thể hoàn thành yêu cầu: \(error.localizedDescription)"
-                }
+                self.messages[index].text = "⚠️ Lỗi: \(error.localizedDescription)\n\nVui lòng kiểm tra kết nối mạng hoặc thử đăng nhập lại tài khoản DeepSeek."
                 self.messages[index].isStreaming = false
                 self.messages[index].isThinking = false
             }
@@ -161,7 +180,6 @@ public class DeepSeekService: ObservableObject {
     }
 
     private func ensureChatSession(session: DeepSeekSession) async throws -> String {
-        // Reuse session if less than 30 messages (simulates a human tab)
         if let existing = activeChatSessionId, messagesInCurrentSession < 30 {
             return existing
         }
@@ -186,8 +204,13 @@ public class DeepSeekService: ObservableObject {
         request.httpBody = "{}".data(using: .utf8)
 
         let (data, response) = try await URLSession.shared.data(for: request)
-        guard let http = response as? HTTPURLResponse, http.statusCode == 200 else {
-            throw NSError(domain: "DeepSeekService", code: -2, userInfo: [NSLocalizedDescriptionKey: "Failed to create chat session"])
+        guard let http = response as? HTTPURLResponse else {
+            throw NSError(domain: "DeepSeekService", code: -2, userInfo: [NSLocalizedDescriptionKey: "Không nhận được phản hồi từ máy chủ DeepSeek."])
+        }
+
+        if http.statusCode != 200 {
+            let msg = parseErrorMessage(data) ?? "Mã lỗi HTTP \(http.statusCode)"
+            throw NSError(domain: "DeepSeekService", code: http.statusCode, userInfo: [NSLocalizedDescriptionKey: msg])
         }
 
         guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
@@ -195,7 +218,7 @@ public class DeepSeekService: ObservableObject {
               let biz = dataObj["biz_data"] as? [String: Any],
               let chatSession = biz["chat_session"] as? [String: Any],
               let sid = chatSession["id"] as? String else {
-            throw NSError(domain: "DeepSeekService", code: -3, userInfo: [NSLocalizedDescriptionKey: "Unexpected chat session response"])
+            throw NSError(domain: "DeepSeekService", code: -3, userInfo: [NSLocalizedDescriptionKey: "Phản hồi tạo phiên không đúng định dạng."])
         }
 
         self.activeChatSessionId = sid
@@ -226,18 +249,22 @@ public class DeepSeekService: ObservableObject {
         request.httpBody = try JSONSerialization.data(withJSONObject: bodyObj)
 
         let (data, response) = try await URLSession.shared.data(for: request)
-        guard let http = response as? HTTPURLResponse, http.statusCode == 200 else {
-            throw NSError(domain: "DeepSeekService", code: -5, userInfo: [NSLocalizedDescriptionKey: "Failed to fetch PoW challenge"])
+        guard let http = response as? HTTPURLResponse else {
+            throw NSError(domain: "DeepSeekService", code: -5, userInfo: [NSLocalizedDescriptionKey: "Không nhận được phản hồi PoW"])
+        }
+
+        if http.statusCode != 200 {
+            let msg = parseErrorMessage(data) ?? "Lỗi tải PoW (HTTP \(http.statusCode))"
+            throw NSError(domain: "DeepSeekService", code: http.statusCode, userInfo: [NSLocalizedDescriptionKey: msg])
         }
 
         guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
               let dataObj = json["data"] as? [String: Any],
               let biz = dataObj["biz_data"] as? [String: Any],
               let challenge = biz["challenge"] as? [String: Any] else {
-            throw NSError(domain: "DeepSeekService", code: -6, userInfo: [NSLocalizedDescriptionKey: "Invalid PoW challenge shape"])
+            throw NSError(domain: "DeepSeekService", code: -6, userInfo: [NSLocalizedDescriptionKey: "Định dạng PoW không hợp lệ."])
         }
 
-        // Solve PoW in WebAssembly module
         return try await DeepSeekPowSolver.shared.makeHeader(challenge: challenge)
     }
 
@@ -284,8 +311,12 @@ public class DeepSeekService: ObservableObject {
         request.httpBody = try JSONSerialization.data(withJSONObject: bodyObj)
 
         let (bytes, response) = try await URLSession.shared.bytes(for: request)
-        guard let http = response as? HTTPURLResponse, http.statusCode == 200 else {
-            throw NSError(domain: "DeepSeekService", code: -8, userInfo: [NSLocalizedDescriptionKey: "Chat completion error"])
+        guard let http = response as? HTTPURLResponse else {
+            throw NSError(domain: "DeepSeekService", code: -8, userInfo: [NSLocalizedDescriptionKey: "Lỗi kết nối máy chủ"])
+        }
+
+        if http.statusCode != 200 {
+            throw NSError(domain: "DeepSeekService", code: http.statusCode, userInfo: [NSLocalizedDescriptionKey: "Lỗi phản hồi HTTP \(http.statusCode)"])
         }
 
         var emittedInitial = false
@@ -302,7 +333,7 @@ public class DeepSeekService: ObservableObject {
                 continue
             }
 
-            // Check if initial snapshot
+            // Initial snapshot frame
             if !emittedInitial, let valObj = obj["v"] as? [String: Any],
                let respObj = valObj["response"] as? [String: Any] {
                 emittedInitial = true
@@ -319,20 +350,17 @@ public class DeepSeekService: ObservableObject {
             if let v = obj["v"] as? String {
                 if let path = activePath {
                     if path.contains("thinking_content") {
-                        // Append thinking delta
                         if let index = self.messages.firstIndex(where: { $0.id == aiMessageId }) {
                             self.messages[index].thinkingText += v
                             self.messages[index].isThinking = true
                         }
                     } else if path.contains("content") {
-                        // Append response delta
                         if let index = self.messages.firstIndex(where: { $0.id == aiMessageId }) {
                             self.messages[index].text += v
                             self.messages[index].isThinking = false
                         }
                     }
                 } else {
-                    // Fallback append
                     if let index = self.messages.firstIndex(where: { $0.id == aiMessageId }) {
                         self.messages[index].text += v
                     }
@@ -345,4 +373,18 @@ public class DeepSeekService: ObservableObject {
             self.messages[index].isThinking = false
         }
     }
+
+    private func parseErrorMessage(_ data: Data) -> String? {
+        guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            return nil
+        }
+        if let msg = json["msg"] as? String, !msg.isEmpty {
+            return msg
+        }
+        return nil
+    }
+}
+
+public extension Notification.Name {
+    static let openDeepSeekLoginSheet = Notification.Name("openDeepSeekLoginSheet")
 }
