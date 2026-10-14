@@ -60,12 +60,21 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/heads/main') || startsWith(github.ref, 'refs/heads/master') || github.event_name == 'workflow_dispatch'
         with:
-          tag_name: v1.0.4
-          name: "khoa.ai iOS v1.0.4 (Unsigned IPA)"
+          tag_name: v1.0.5
+          name: "khoa.ai iOS v1.0.5 (Unsigned IPA)"
           body: |
-            ### 🚀 khoa.ai v1.0.4 - Cập nhật giao diện Liquid Glass chuẩn 100% & Khắc phục lỗi
-
+            ### 🚀 khoa.ai v1.0.5 - Sửa lỗi kết nối phiên chat DeepSeek (chat_session.id)
             Được phát triển bởi **Khoa Dev**.
+
+            - ⚡ **Khắc phục lỗi 'Định dạng phiên không hợp lệ'**: Tương thích hoàn toàn với cấu trúc phản hồi `biz_data.chat_session.id` của DeepSeek.
+            - 🌐 Web search mặc định luôn bật, DeepThink mặc định tắt.
+            - 🪟 Nền thanh nhập liệu trong suốt tuyệt đối 100%.
+            - 🎛️ Nút chọn Model và Menu trong suốt 100%, không viền bao bọc.
+            - ✉️ Nút mic/loa kế bên (+) tự động đổi thành icon Send khi gõ tin nhắn.
+            - ⬇️ Nút mũi tên cuộn xuống chỉ hiện khi cuộn lên trên, ẩn khi xuống cuối.
+            - 📜 Lịch sử chat thiết kế chuẩn 100% Ảnh 1.
+            - 📊 Bảng biểu Markdown chuẩn 100% Ảnh 2 có thanh công cụ và in đậm cột đầu.
+            - 🧠 Ghi nhớ danh tính khoa.ai tạo bởi Khoa Dev cùng toàn bộ kiến thức dulieukhoaai.md.
 
             #### ✨ Các cải tiến và sửa lỗi trong phiên bản 1.0.4:
             1. 🌐 **Web Search luôn bật mặc định**, Suy nghĩ (DeepThink) mặc định là `false`.

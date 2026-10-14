@@ -253,7 +253,7 @@ Người dùng: \(fullPromptPayload)
         request.setValue("2.0.0", forHTTPHeaderField: "x-client-version")
         request.setValue("web", forHTTPHeaderField: "x-client-platform")
 
-        let bodyObj: [String: Any] = ["character_id": NSNull()]
+        let bodyObj: [String: Any] = [:]
         request.httpBody = try JSONSerialization.data(withJSONObject: bodyObj)
 
         let (data, response) = try await URLSession.shared.data(for: request)
@@ -266,10 +266,24 @@ Người dùng: \(fullPromptPayload)
             throw NSError(domain: "DeepSeekService", code: http.statusCode, userInfo: [NSLocalizedDescriptionKey: msg])
         }
 
-        guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
-              let dataObj = json["data"] as? [String: Any],
-              let biz = dataObj["biz_data"] as? [String: Any],
-              let id = biz["id"] as? String else {
+        guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            throw NSError(domain: "DeepSeekService", code: -3, userInfo: [NSLocalizedDescriptionKey: "Phản hồi phiên chat không phải JSON hợp lệ"])
+        }
+
+        if let code = json["code"] as? Int, code != 0 {
+            let msg = json["msg"] as? String ?? "Lỗi API DeepSeek (mã \(code))"
+            throw NSError(domain: "DeepSeekService", code: code, userInfo: [NSLocalizedDescriptionKey: msg])
+        }
+
+        let dataObj = json["data"] as? [String: Any]
+        let biz = dataObj?["biz_data"] as? [String: Any]
+        let chatSession = (biz?["chat_session"] as? [String: Any]) ?? (dataObj?["chat_session"] as? [String: Any])
+
+        let foundId = (chatSession?["id"] as? String)
+            ?? (biz?["id"] as? String)
+            ?? (dataObj?["id"] as? String)
+
+        guard let id = foundId, !id.isEmpty else {
             throw NSError(domain: "DeepSeekService", code: -3, userInfo: [NSLocalizedDescriptionKey: "Định dạng phiên không hợp lệ"])
         }
 
@@ -310,14 +324,24 @@ Người dùng: \(fullPromptPayload)
             throw NSError(domain: "DeepSeekService", code: http.statusCode, userInfo: [NSLocalizedDescriptionKey: msg])
         }
 
-        guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
-              let dataObj = json["data"] as? [String: Any],
-              let biz = dataObj["biz_data"] as? [String: Any],
-              let challenge = biz["challenge"] as? [String: Any] else {
+        guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            throw NSError(domain: "DeepSeekService", code: -6, userInfo: [NSLocalizedDescriptionKey: "Định dạng JSON PoW không hợp lệ."])
+        }
+
+        if let code = json["code"] as? Int, code != 0 {
+            let msg = json["msg"] as? String ?? "Lỗi API PoW (mã \(code))"
+            throw NSError(domain: "DeepSeekService", code: code, userInfo: [NSLocalizedDescriptionKey: msg])
+        }
+
+        let dataObj = json["data"] as? [String: Any]
+        let biz = dataObj?["biz_data"] as? [String: Any]
+        let challenge = (biz?["challenge"] as? [String: Any]) ?? (dataObj?["challenge"] as? [String: Any])
+
+        guard let chal = challenge else {
             throw NSError(domain: "DeepSeekService", code: -6, userInfo: [NSLocalizedDescriptionKey: "Định dạng PoW không hợp lệ."])
         }
 
-        return try await DeepSeekPowSolver.shared.makeHeader(challenge: challenge)
+        return try await DeepSeekPowSolver.shared.makeHeader(challenge: chal)
     }
 
     private func streamCompletion(
