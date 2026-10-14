@@ -412,198 +412,13 @@ public struct MainChatView: View {
         VStack(spacing: 12) {
             // Main Input Capsule Card
             VStack(spacing: 10) {
-                // Attachment Thumbnail + Suggestion Chips (Matching Image 2!)
                 if let attachment = selectedAttachment {
-                    VStack(alignment: .leading, spacing: 10) {
-                        // Image Thumbnail with (✕) remove button
-                        HStack {
-                            ZStack(alignment: .topTrailing) {
-                                if let img = attachment.image {
-                                    Image(uiImage: img)
-                                        .resizable()
-                                        .scaledToFill()
-                                        .frame(width: 68, height: 68)
-                                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                                .strokeBorder(Color.black.opacity(0.08), lineWidth: 1)
-                                        )
-                                } else {
-                                    RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                        .fill(Color(red: 0.94, green: 0.96, blue: 1.0))
-                                        .frame(width: 68, height: 68)
-                                        .overlay(
-                                            Image(systemName: "doc.text.fill")
-                                                .font(.system(size: 24))
-                                                .foregroundStyle(Color.blue)
-                                        )
-                                }
-
-                                // Dark (✕) close button
-                                Button {
-                                    selectedAttachment = nil
-                                    pickedImage = nil
-                                } label: {
-                                    Image(systemName: "xmark")
-                                        .font(.system(size: 10, weight: .bold))
-                                        .foregroundStyle(Color.white)
-                                        .frame(width: 20, height: 20)
-                                        .background(Color.black.opacity(0.65))
-                                        .clipShape(Circle())
-                                }
-                                .offset(x: 5, y: -5)
-                            }
-
-                            if isProcessingAttachment {
-                                HStack(spacing: 6) {
-                                    ProgressView()
-                                        .scaleEffect(0.7)
-                                    Text("Đang phân tích...")
-                                        .font(.system(size: 12))
-                                        .foregroundStyle(Color.secondary)
-                                }
-                                .padding(.leading, 8)
-                            }
-
-                            Spacer()
-                        }
-                        .padding(.top, 4)
-
-                        // 3 Quick Suggestion Chips: [Đây là gì →], [Phân tích →], [Đề xuất giải pháp →]
-                        // User rule: "Khi user nhập tin nhắn thì gợi ý mất"
-                        if inputText.isEmpty {
-                            ScrollView(.horizontal, showsIndicators: false) {
-                                HStack(spacing: 8) {
-                                    suggestionChip(title: "Đây là gì →") {
-                                        sendWithPrompt("Đây là gì")
-                                    }
-
-                                    suggestionChip(title: "Phân tích →") {
-                                        sendWithPrompt("Phân tích chi tiết hình ảnh này")
-                                    }
-
-                                    suggestionChip(title: "Đề xuất giải pháp →") {
-                                        sendWithPrompt("Đề xuất giải pháp dựa trên hình ảnh này")
-                                    }
-                                }
-                            }
-                            .transition(.opacity.combined(with: .move(edge: .top)))
-                        }
-                    }
-                    .padding(.horizontal, 4)
+                    attachmentHeaderView(attachment: attachment)
                 }
 
-                // Upper Input Row: TextField
-                HStack(alignment: .center, spacing: 10) {
-                    TextField("Nhập tin nhắn", text: $inputText, axis: .vertical)
-                        .font(.system(size: 16, weight: .regular, design: .default))
-                        .foregroundStyle(Color.black)
-                        .lineLimit(1...5)
-                        .focused($isInputFocused)
-                        .padding(.horizontal, 6)
-                        .padding(.top, 2)
+                inputTextFieldRow
 
-                    if !inputText.isEmpty {
-                        Button {
-                            inputText = ""
-                        } label: {
-                            Image(systemName: "xmark.circle.fill")
-                                .foregroundStyle(Color.secondary.opacity(0.6))
-                                .font(.system(size: 16))
-                        }
-                    }
-                }
-
-                // Lower Controls Row: [Suy nghĩ] [Tìm kiếm] (+) ((•)) (↑/■)
-                HStack(spacing: 8) {
-                    // Pill 1: Suy nghĩ (DeepThink) - NOT squished, fixedSize!
-                    Button {
-                        let haptic = UIImpactFeedbackGenerator(style: .light)
-                        haptic.impactOccurred()
-                        withAnimation(.spring(response: 0.25, dampingFraction: 0.7)) {
-                            service.isThinkingEnabled.toggle()
-                        }
-                    } label: {
-                        HStack(spacing: 6) {
-                            Image(systemName: "sparkles")
-                                .font(.system(size: 13, weight: .semibold))
-                            Text("Suy nghĩ")
-                        }
-                    }
-                    .glassPill(active: service.isThinkingEnabled, accentColor: Color(red: 0.12, green: 0.45, blue: 0.95))
-                    .fixedSize(horizontal: true, vertical: false)
-
-                    // Pill 2: Web Search - DEFAULT ACTIVE PER USER REQUEST!
-                    Button {
-                        let haptic = UIImpactFeedbackGenerator(style: .light)
-                        haptic.impactOccurred()
-                        withAnimation(.spring(response: 0.25, dampingFraction: 0.7)) {
-                            service.isSearchEnabled.toggle()
-                        }
-                    } label: {
-                        HStack(spacing: 6) {
-                            Image(systemName: "globe")
-                                .font(.system(size: 13, weight: .semibold))
-                            Text("Tìm kiếm")
-                        }
-                    }
-                    .modifier(WebSearchPillModifier(active: service.isSearchEnabled))
-                    .fixedSize(horizontal: true, vertical: false)
-
-                    Spacer()
-
-                    // Plus / Xmark Action Button
-                    Button {
-                        dismissKeyboard()
-                        let haptic = UIImpactFeedbackGenerator(style: .light)
-                        haptic.impactOccurred()
-                        withAnimation(.spring(response: 0.32, dampingFraction: 0.75)) {
-                            showAttachmentDrawer.toggle()
-                        }
-                    } label: {
-                        Image(systemName: showAttachmentDrawer ? "xmark" : "plus")
-                            .font(.system(size: 17, weight: .semibold))
-                            .foregroundStyle(Color.black.opacity(0.85))
-                    }
-                    .glassCircleButton(diameter: 40)
-
-                    // Voice Waveform button
-                    Button {
-                        dismissKeyboard()
-                        let haptic = UIImpactFeedbackGenerator(style: .medium)
-                        haptic.impactOccurred()
-                    } label: {
-                        Image(systemName: "waveform")
-                            .font(.system(size: 17, weight: .semibold))
-                            .foregroundStyle(Color.black.opacity(0.85))
-                    }
-                    .glassCircleButton(diameter: 40)
-
-                    // Send Button OR Stop Button (Matching video!)
-                    if service.isGenerating {
-                        // Stop generation button (Blue circle with white square inside)
-                        Button {
-                            let haptic = UIImpactFeedbackGenerator(style: .medium)
-                            haptic.impactOccurred()
-                            service.stopStreaming()
-                        } label: {
-                            Image(systemName: "stop.fill")
-                                .font(.system(size: 13, weight: .bold))
-                                .foregroundStyle(Color.white)
-                        }
-                        .glassCircleButton(diameter: 40, active: true)
-                    } else if !inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || selectedAttachment != nil {
-                        // Blue Send Button (↑)
-                        Button {
-                            sendWithPrompt(inputText)
-                        } label: {
-                            Image(systemName: "arrow.up")
-                                .font(.system(size: 17, weight: .bold))
-                                .foregroundStyle(Color.white)
-                        }
-                        .glassCircleButton(diameter: 40, active: true)
-                    }
-                }
+                inputControlsRow
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 14)
@@ -627,31 +442,228 @@ public struct MainChatView: View {
                     .shadow(color: Color.black.opacity(0.02), radius: 4, x: 0, y: 1)
             }
 
-            // Attachment Cards Row: Chụp ảnh, Album, Tệp (Automatically resets after selection)
+            // Attachment Cards Row: Chụp ảnh, Album, Tệp
             if showAttachmentDrawer {
-                HStack(spacing: 12) {
-                    attachmentCard(icon: "camera", label: "Chụp ảnh") {
-                        withAnimation { showAttachmentDrawer = false }
-                        showCameraPicker = true
-                    }
-
-                    attachmentCard(icon: "photo", label: "Album") {
-                        withAnimation { showAttachmentDrawer = false }
-                        showPhotoPicker = true
-                    }
-
-                    attachmentCard(icon: "paperclip", label: "Tệp") {
-                        withAnimation { showAttachmentDrawer = false }
-                        showDocPicker = true
-                    }
-                }
-                .transition(.asymmetric(
-                    insertion: .opacity.combined(with: .move(edge: .bottom)),
-                    removal: .opacity.combined(with: .scale(scale: 0.95))
-                ))
+                attachmentDrawerRow
             }
         }
     }
+
+    // Attachment Thumbnail + Suggestion Chips
+    private func attachmentHeaderView(attachment: AttachedMedia) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                ZStack(alignment: .topTrailing) {
+                    if let img = attachment.image {
+                        Image(uiImage: img)
+                            .resizable()
+                            .scaledToFill()
+                            .frame(width: 68, height: 68)
+                            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                    .strokeBorder(Color.black.opacity(0.08), lineWidth: 1)
+                            )
+                    } else {
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .fill(Color(red: 0.94, green: 0.96, blue: 1.0))
+                            .frame(width: 68, height: 68)
+                            .overlay(
+                                Image(systemName: "doc.text.fill")
+                                    .font(.system(size: 24))
+                                    .foregroundStyle(Color.blue)
+                            )
+                    }
+
+                    Button {
+                        selectedAttachment = nil
+                        pickedImage = nil
+                    } label: {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundStyle(Color.white)
+                            .frame(width: 20, height: 20)
+                            .background(Color.black.opacity(0.65))
+                            .clipShape(Circle())
+                    }
+                    .offset(x: 5, y: -5)
+                }
+
+                if isProcessingAttachment {
+                    HStack(spacing: 6) {
+                        ProgressView()
+                            .scaleEffect(0.7)
+                        Text("Đang phân tích...")
+                            .font(.system(size: 12))
+                            .foregroundStyle(Color.secondary)
+                    }
+                    .padding(.leading, 8)
+                }
+
+                Spacer()
+            }
+            .padding(.top, 4)
+
+            if inputText.isEmpty {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        suggestionChip(title: "Đây là gì →") {
+                            sendWithPrompt("Đây là gì")
+                        }
+
+                        suggestionChip(title: "Phân tích →") {
+                            sendWithPrompt("Phân tích chi tiết hình ảnh này")
+                        }
+
+                        suggestionChip(title: "Đề xuất giải pháp →") {
+                            sendWithPrompt("Đề xuất giải pháp dựa trên hình ảnh này")
+                        }
+                    }
+                }
+                .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+        }
+        .padding(.horizontal, 4)
+    }
+
+    // Text Field Row
+    private var inputTextFieldRow: some View {
+        HStack(alignment: .center, spacing: 10) {
+            TextField("Nhập tin nhắn", text: $inputText, axis: .vertical)
+                .font(.system(size: 16, weight: .regular, design: .default))
+                .foregroundStyle(Color.black)
+                .lineLimit(1...5)
+                .focused($isInputFocused)
+                .padding(.horizontal, 6)
+                .padding(.top, 2)
+
+            if !inputText.isEmpty {
+                Button {
+                    inputText = ""
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundStyle(Color.secondary.opacity(0.6))
+                        .font(.system(size: 16))
+                }
+            }
+        }
+    }
+
+    // Controls Row
+    private var inputControlsRow: some View {
+        HStack(spacing: 8) {
+            // Pill 1: Suy nghĩ
+            Button {
+                let haptic = UIImpactFeedbackGenerator(style: .light)
+                haptic.impactOccurred()
+                withAnimation(.spring(response: 0.25, dampingFraction: 0.7)) {
+                    service.isThinkingEnabled.toggle()
+                }
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "sparkles")
+                        .font(.system(size: 13, weight: .semibold))
+                    Text("Suy nghĩ")
+                }
+            }
+            .glassPill(active: service.isThinkingEnabled, accentColor: Color(red: 0.12, green: 0.45, blue: 0.95))
+            .fixedSize(horizontal: true, vertical: false)
+
+            // Pill 2: Tìm kiếm
+            Button {
+                let haptic = UIImpactFeedbackGenerator(style: .light)
+                haptic.impactOccurred()
+                withAnimation(.spring(response: 0.25, dampingFraction: 0.7)) {
+                    service.isSearchEnabled.toggle()
+                }
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "globe")
+                        .font(.system(size: 13, weight: .semibold))
+                    Text("Tìm kiếm")
+                }
+            }
+            .modifier(WebSearchPillModifier(active: service.isSearchEnabled))
+            .fixedSize(horizontal: true, vertical: false)
+
+            Spacer()
+
+            // Plus / Xmark Button
+            Button {
+                dismissKeyboard()
+                let haptic = UIImpactFeedbackGenerator(style: .light)
+                haptic.impactOccurred()
+                withAnimation(.spring(response: 0.32, dampingFraction: 0.75)) {
+                    showAttachmentDrawer.toggle()
+                }
+            } label: {
+                Image(systemName: showAttachmentDrawer ? "xmark" : "plus")
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundStyle(Color.black.opacity(0.85))
+            }
+            .glassCircleButton(diameter: 40)
+
+            // Waveform
+            Button {
+                dismissKeyboard()
+                let haptic = UIImpactFeedbackGenerator(style: .medium)
+                haptic.impactOccurred()
+            } label: {
+                Image(systemName: "waveform")
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundStyle(Color.black.opacity(0.85))
+            }
+            .glassCircleButton(diameter: 40)
+
+            // Send or Stop
+            if service.isGenerating {
+                Button {
+                    let haptic = UIImpactFeedbackGenerator(style: .medium)
+                    haptic.impactOccurred()
+                    service.stopStreaming()
+                } label: {
+                    Image(systemName: "stop.fill")
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundStyle(Color.white)
+                }
+                .glassCircleButton(diameter: 40, active: true)
+            } else if !inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || selectedAttachment != nil {
+                Button {
+                    sendWithPrompt(inputText)
+                } label: {
+                    Image(systemName: "arrow.up")
+                        .font(.system(size: 17, weight: .bold))
+                        .foregroundStyle(Color.white)
+                }
+                .glassCircleButton(diameter: 40, active: true)
+            }
+        }
+    }
+
+    // Attachment Drawer Row
+    private var attachmentDrawerRow: some View {
+        HStack(spacing: 12) {
+            attachmentCard(icon: "camera", label: "Chụp ảnh") {
+                withAnimation { showAttachmentDrawer = false }
+                showCameraPicker = true
+            }
+
+            attachmentCard(icon: "photo", label: "Album") {
+                withAnimation { showAttachmentDrawer = false }
+                showPhotoPicker = true
+            }
+
+            attachmentCard(icon: "paperclip", label: "Tệp") {
+                withAnimation { showAttachmentDrawer = false }
+                showDocPicker = true
+            }
+        }
+        .transition(.asymmetric(
+            insertion: .opacity.combined(with: .move(edge: .bottom)),
+            removal: .opacity.combined(with: .scale(scale: 0.95))
+        ))
+    }
+
 
     // Quick Suggestion Chip Builder (Matching Image 2)
     private func suggestionChip(title: String, action: @escaping () -> Void) -> some View {
@@ -828,3 +840,26 @@ public struct MainChatView: View {
         }
     }
 }
+
+public struct WebSearchPillModifier: ViewModifier {
+    public var active: Bool
+
+    public func body(content: Content) -> some View {
+        content
+            .font(.system(size: 13, weight: .medium, design: .rounded))
+            .foregroundStyle(Color(red: 0.12, green: 0.45, blue: 0.95))
+            .padding(.horizontal, 12)
+            .padding(.vertical, 7)
+            .background {
+                Capsule()
+                    .fill(Color(red: 0.93, green: 0.96, blue: 1.0))
+                    .overlay(
+                        Capsule().strokeBorder(
+                            active ? Color(red: 0.12, green: 0.45, blue: 0.95).opacity(0.5) : Color(red: 0.85, green: 0.90, blue: 0.98),
+                            lineWidth: active ? 1.4 : 0.8
+                        )
+                    )
+            }
+    }
+}
+
