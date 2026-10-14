@@ -9,6 +9,10 @@
 import SwiftUI
 import WebKit
 
+public extension Notification.Name {
+    static let deepSeekReloadPage = Notification.Name("deepSeekReloadPage")
+}
+
 public struct DeepSeekLoginSheet: View {
     @Environment(\.dismiss) private var dismiss
     @ObservedObject private var authManager = DeepSeekAuthManager.shared
@@ -24,7 +28,6 @@ public struct DeepSeekLoginSheet: View {
     public var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
-                // Segmented Picker
                 Picker("Chế độ đăng nhập", selection: $loginMode) {
                     Text("Trình duyệt WebKit").tag(0)
                     Text("Nạp phiên / Token").tag(1)
@@ -34,140 +37,9 @@ public struct DeepSeekLoginSheet: View {
                 .padding(.vertical, 8)
 
                 if loginMode == 0 {
-                    // Tab 1: Native WebKit Browser
-                    VStack(spacing: 0) {
-                        // Info banner
-                        HStack(spacing: 12) {
-                            Image(systemName: isSuccess ? "checkmark.circle.fill" : "lock.shield.fill")
-                                .font(.system(size: 20))
-                                .foregroundStyle(isSuccess ? Color.green : Color.blue)
-
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(isSuccess ? "Đăng nhập thành công!" : "Đăng nhập DeepSeek")
-                                    .font(.system(size: 14, weight: .semibold))
-                                Text(statusMessage)
-                                    .font(.system(size: 12))
-                                    .foregroundStyle(Color.secondary)
-                                    .lineLimit(2)
-                            }
-                            Spacer()
-                            if isLoading && !isSuccess {
-                                ProgressView().scaleEffect(0.8)
-                            }
-                        }
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 10)
-                        .background(Color(.systemGray6).opacity(0.6))
-                        .overlay(alignment: .bottom) { Divider() }
-
-                        DeepSeekWebViewWrapper(
-                            isLoading: $isLoading,
-                            statusMessage: $statusMessage,
-                            isSuccess: $isSuccess,
-                            onSessionCaptured: { token, cookies, userAgent in
-                                Task { @MainActor in
-                                    authManager.saveSession(
-                                        token: token,
-                                        cookies: cookies,
-                                        userAgent: userAgent
-                                    )
-                                    statusMessage = "Đã lưu session an toàn! Đang chuyển tiếp..."
-                                    isSuccess = true
-                                    try? await Task.sleep(nanoseconds: 800_000_000)
-                                    dismiss()
-                                }
-                            }
-                        )
-                    }
+                    webKitSection
                 } else {
-                    // Tab 2: 1-Tap Preloaded / Manual Token Import
-                    ScrollView {
-                        VStack(spacing: 24) {
-                            // 1-Tap Load Preloaded Card
-                            VStack(alignment: .leading, spacing: 12) {
-                                HStack {
-                                    Image(systemName: "bolt.fill")
-                                        .foregroundStyle(Color.orange)
-                                    Text("Nạp phiên sẵn có (1-Chạm)")
-                                        .font(.system(size: 16, weight: .bold))
-                                }
-
-                                Text("Sử dụng ngay phiên DeepSeek mẫu đã được kiểm chứng hoạt động (kèm đầy đủ token & cookies vượt AWS WAF).")
-                                    .font(.system(size: 13))
-                                    .foregroundStyle(Color.secondary)
-
-                                Button {
-                                    authManager.loadPreloadedSession()
-                                    let haptic = UINotificationFeedbackGenerator()
-                                    haptic.notificationOccurred(.success)
-                                    dismiss()
-                                } label: {
-                                    HStack {
-                                        Spacer()
-                                        Image(systemName: "play.circle.fill")
-                                        Text("Kích hoạt phiên mẫu & Chat ngay")
-                                            .font(.system(size: 15, weight: .semibold))
-                                        Spacer()
-                                    }
-                                    .padding(.vertical, 12)
-                                    .background(Color.blue)
-                                    .foregroundStyle(Color.white)
-                                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                                }
-                            }
-                            .padding(16)
-                            .background(Color(.systemGray6))
-                            .clipShape(RoundedRectangle(cornerRadius: 16))
-
-                            // Manual Token Paste Card
-                            VStack(alignment: .leading, spacing: 12) {
-                                HStack {
-                                    Image(systemName: "key.fill")
-                                        .foregroundStyle(Color.blue)
-                                    Text("Nhập Bearer Token thủ công")
-                                        .font(.system(size: 16, weight: .bold))
-                                }
-
-                                Text("Nếu bạn đã có userToken từ web chat.deepseek.com (localStorage.userToken), hãy dán vào đây:")
-                                    .font(.system(size: 13))
-                                    .foregroundStyle(Color.secondary)
-
-                                TextField("Dán mã token vào đây...", text: $manualTokenInput)
-                                    .font(.system(size: 14, design: .monospaced))
-                                    .padding(12)
-                                    .background(Color(.systemBackground))
-                                    .clipShape(RoundedRectangle(cornerRadius: 10))
-                                    .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(Color.secondary.opacity(0.3), lineWidth: 1))
-
-                                Button {
-                                    let trimmed = manualTokenInput.trimmingCharacters(in: .whitespacesAndNewlines)
-                                    guard !trimmed.isEmpty else { return }
-                                    authManager.loginWithManualToken(token: trimmed)
-                                    let haptic = UINotificationFeedbackGenerator()
-                                    haptic.notificationOccurred(.success)
-                                    dismiss()
-                                } label: {
-                                    HStack {
-                                        Spacer()
-                                        Text("Lưu Token & Sử dụng")
-                                            .font(.system(size: 15, weight: .semibold))
-                                        Spacer()
-                                    }
-                                    .padding(.vertical, 12)
-                                    .background(manualTokenInput.isEmpty ? Color.gray.opacity(0.4) : Color.green)
-                                    .foregroundStyle(Color.white)
-                                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                                }
-                                .disabled(manualTokenInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                            }
-                            .padding(16)
-                            .background(Color(.systemGray6))
-                            .clipShape(RoundedRectangle(cornerRadius: 16))
-
-                            Spacer()
-                        }
-                        .padding(16)
-                    }
+                    manualTokenSection
                 }
             }
             .navigationTitle("Tài khoản DeepSeek")
@@ -186,6 +58,144 @@ public struct DeepSeekLoginSheet: View {
                     }
                 }
             }
+        }
+    }
+
+    // MARK: - WebKit Section
+    private var webKitSection: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 12) {
+                Image(systemName: isSuccess ? "checkmark.circle.fill" : "lock.shield.fill")
+                    .font(.system(size: 20))
+                    .foregroundStyle(isSuccess ? Color.green : Color.blue)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(isSuccess ? "Đăng nhập thành công!" : "Đăng nhập DeepSeek")
+                        .font(.system(size: 14, weight: .semibold))
+                    Text(statusMessage)
+                        .font(.system(size: 12))
+                        .foregroundStyle(Color.secondary)
+                        .lineLimit(2)
+                }
+                Spacer()
+                if isLoading && !isSuccess {
+                    ProgressView().scaleEffect(0.8)
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+            .background(Color(.systemGray6).opacity(0.6))
+            .overlay(alignment: .bottom) { Divider() }
+
+            DeepSeekWebViewWrapper(
+                isLoading: $isLoading,
+                statusMessage: $statusMessage,
+                isSuccess: $isSuccess,
+                onSessionCaptured: { token, cookies, userAgent in
+                    Task { @MainActor in
+                        authManager.saveSession(
+                            token: token,
+                            cookies: cookies,
+                            userAgent: userAgent
+                        )
+                        statusMessage = "Đã lưu session an toàn! Đang chuyển tiếp..."
+                        isSuccess = true
+                        try? await Task.sleep(nanoseconds: 800_000_000)
+                        dismiss()
+                    }
+                }
+            )
+        }
+    }
+
+    // MARK: - Manual / Preloaded Section
+    private var manualTokenSection: some View {
+        ScrollView {
+            VStack(spacing: 20) {
+                // 1-Tap Load Preloaded Card
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack {
+                        Image(systemName: "bolt.fill")
+                            .foregroundStyle(Color.orange)
+                        Text("Nạp phiên sẵn có (1-Chạm)")
+                            .font(.system(size: 16, weight: .bold))
+                    }
+
+                    Text("Sử dụng ngay phiên DeepSeek mẫu đã được kiểm chứng hoạt động (kèm đầy đủ token & cookies vượt AWS WAF).")
+                        .font(.system(size: 13))
+                        .foregroundStyle(Color.secondary)
+
+                    Button {
+                        authManager.loadPreloadedSession()
+                        let haptic = UINotificationFeedbackGenerator()
+                        haptic.notificationOccurred(.success)
+                        dismiss()
+                    } label: {
+                        HStack {
+                            Spacer()
+                            Image(systemName: "play.circle.fill")
+                            Text("Kích hoạt phiên mẫu & Chat ngay")
+                                .font(.system(size: 15, weight: .semibold))
+                            Spacer()
+                        }
+                        .padding(.vertical, 12)
+                        .background(Color.blue)
+                        .foregroundStyle(Color.white)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                    }
+                }
+                .padding(16)
+                .background(Color(.systemGray6))
+                .clipShape(RoundedRectangle(cornerRadius: 16))
+
+                // Manual Token Paste Card
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack {
+                        Image(systemName: "key.fill")
+                            .foregroundStyle(Color.blue)
+                        Text("Nhập Bearer Token thủ công")
+                            .font(.system(size: 16, weight: .bold))
+                    }
+
+                    Text("Nếu bạn đã có userToken từ web chat.deepseek.com (localStorage.userToken), hãy dán vào đây:")
+                        .font(.system(size: 13))
+                        .foregroundStyle(Color.secondary)
+
+                    TextField("Dán mã token vào đây...", text: $manualTokenInput)
+                        .font(.system(size: 14, design: .monospaced))
+                        .padding(12)
+                        .background(Color(.systemBackground))
+                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                        .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(Color.secondary.opacity(0.3), lineWidth: 1))
+
+                    Button {
+                        let trimmed = manualTokenInput.trimmingCharacters(in: .whitespacesAndNewlines)
+                        guard !trimmed.isEmpty else { return }
+                        authManager.loginWithManualToken(token: trimmed)
+                        let haptic = UINotificationFeedbackGenerator()
+                        haptic.notificationOccurred(.success)
+                        dismiss()
+                    } label: {
+                        HStack {
+                            Spacer()
+                            Text("Lưu Token & Sử dụng")
+                                .font(.system(size: 15, weight: .semibold))
+                            Spacer()
+                        }
+                        .padding(.vertical, 12)
+                        .background(manualTokenInput.isEmpty ? Color.gray.opacity(0.4) : Color.green)
+                        .foregroundStyle(Color.white)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                    }
+                    .disabled(manualTokenInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                }
+                .padding(16)
+                .background(Color(.systemGray6))
+                .clipShape(RoundedRectangle(cornerRadius: 16))
+
+                Spacer()
+            }
+            .padding(16)
         }
     }
 }
