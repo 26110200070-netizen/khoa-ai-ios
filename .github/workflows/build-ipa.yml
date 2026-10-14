@@ -60,22 +60,25 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/heads/main') || startsWith(github.ref, 'refs/heads/master') || github.event_name == 'workflow_dispatch'
         with:
-          tag_name: v1.0.6
-          name: "khoa.ai iOS v1.0.6 (Unsigned IPA)"
+          tag_name: v1.0.7
+          name: "khoa.ai iOS v1.0.7 (Unsigned IPA)"
           body: |
-            ### 🚀 khoa.ai v1.0.6 - Hoàn thiện Markdown, Tô màu Code & Tối ưu UI
+            ### 🚀 khoa.ai v1.0.7 - Bảng Markdown ChatGPT Chuẩn 100%, Sửa lỗi FINISHED & Học dữ liệu dulieukhoaai
             Được sáng lập và phát triển bởi **Khoa Dev**.
 
-            #### ✨ Các cải tiến nổi bật trong phiên bản 1.0.6:
-            1. ⌨️ **Khôi phục khung nhập liệu chuẩn Liquid Glass**: Bo tròn mềm mại, kính mờ trắng cao cấp với bóng đổ nhẹ nhàng, nút mic tự động đổi thành icon gửi khi nhập liệu.
-            2. 📜 **Hạ thấp thanh tìm kiếm Lịch sử chat**: Tạo khoảng cách thoải mái với cạnh trên và Dynamic Island, thẩm mỹ và dễ thao tác.
-            3. 🧠 **Trả về Markdown nguyên bản DeepSeek**: Bỏ các chỉ dẫn gò bó của file dulieukhoaai.md, để AI định dạng văn bản, danh sách tự nhiên nhất, giữ vững danh tính **khoa.ai** được sáng lập bởi **Khoa Dev**.
-            4. 📊 **Sửa lỗi in đậm bảng Markdown**: Xử lý triệt để không còn hiện `** **` thô, render in đậm chuẩn SwiftUI trên tất cả các ô bảng.
-            5. 🎨 **Tô màu cú pháp Code (Syntax Highlighting) & Chữ nhỏ gọn**:
-               - Nhận diện từ khóa (tím), chuỗi text (xanh lá), số (cam), kiểu dữ liệu (xanh dương), chú thích (xám).
-               - Kích thước font chữ khối code nhỏ gọn hơn (11.5pt) giúp hiển thị nhiều dòng code rõ ràng mà không bị rối mắt.
-            - 📊 Bảng biểu Markdown chuẩn 100% Ảnh 2 có thanh công cụ và in đậm cột đầu.
-            - 🧠 Ghi nhớ danh tính khoa.ai tạo bởi Khoa Dev cùng toàn bộ kiến thức dulieukhoaai.md.
+            #### ✨ Các cải tiến nổi bật trong phiên bản 1.0.7:
+            1. 📊 **Thiết kế Bảng Markdown Chuẩn 100% ChatGPT (Ảnh 2)**:
+               - Loại bỏ hoàn toàn khung hộp bao bọc và thanh công cụ "Bảng" rườm rà.
+               - Bỏ các đường kẻ dọc ngăn cách cột thô cứng; chỉ sử dụng các đường phân cách ngang thanh mảnh, mềm mại giữa các hàng.
+               - Lọc sạch toàn bộ ký tự `** **` thô trong các ô bảng, giúp chữ hiển thị tự nhiên, ngay ngắn, thoáng đãng.
+            2. ⚡ **Sửa triệt để lỗi hiện chữ 'FINISHED' cuối câu trả lời**:
+               - Khắc phục lỗi rò rỉ token trạng thái fragment SSE (`response/status`) từ máy chủ DeepSeek vào nội dung tin nhắn người dùng.
+            3. 💬 **Chào hỏi tự nhiên, không tự giới thiệu tên thừa thãi**:
+               - Khi người dùng chào hỏi bình thường ("Chào bạn", "Xin chào", "Hello"), AI chào lại thân thiện, ấm áp và ngắn gọn như ChatGPT.
+               - Chỉ khi người dùng chủ động hỏi "Bạn là ai?" hoặc "Ai tạo ra bạn?", AI mới khẳng định danh tính là khoa.ai do Khoa Dev tạo ra.
+            4. 🧠 **Học quy chuẩn từ dulieukhoaai.md & phong cách ChatGPT**:
+               - Không lạm dụng gạch đầu dòng (-); diễn đạt bằng các đoạn văn tự nhiên, mạch lạc, kết nối ý tưởng mượt mà.
+               - Trình bày Markdown rõ ràng, chuyên nghiệp; trả lời thẳng vào trọng tâm yêu cầu.
 
             #### ✨ Các cải tiến và sửa lỗi trong phiên bản 1.0.4:
             1. 🌐 **Web Search luôn bật mặc định**, Suy nghĩ (DeepThink) mặc định là `false`.

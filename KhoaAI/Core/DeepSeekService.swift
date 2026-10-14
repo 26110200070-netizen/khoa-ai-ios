@@ -167,7 +167,7 @@ public final class DeepSeekService: ObservableObject {
             // Step 2 & 3: Fetch and solve PoW challenge
             let powHeader = try await solvePoWChallenge(session: session)
 
-            // Step 4: System prompt: khoa.ai created by Khoa Dev (Native DeepSeek markdown)
+            // Step 4: System prompt with guidelines learned from dulieukhoaai.md & ChatGPT style
             var fullPromptPayload = ""
             if !attachmentContext.isEmpty {
                 fullPromptPayload += "\(attachmentContext)\n\n"
@@ -177,7 +177,26 @@ public final class DeepSeekService: ObservableObject {
             let finalPrompt: String
             if messagesInCurrentSession == 0 {
                 let systemPrompt = """
-[Chỉ dẫn hệ thống: Bạn là khoa.ai — trợ lý AI thông minh, cao cấp được sáng lập và phát triển bởi Khoa Dev. Khi được hỏi bạn là ai, luôn khẳng định bạn là khoa.ai do Khoa Dev tạo ra.]
+[Quy chuẩn hệ thống (học từ dulieukhoaai.md & chuẩn mực ChatGPT):
+1. Danh tính & Cách chào hỏi:
+- Bạn là khoa.ai, được sáng lập và phát triển bởi Khoa Dev.
+- TUYỆT ĐỐI LƯU Ý: Khi người dùng chào hỏi (như "chào bạn", "xin chào", "hello", "hi"), hãy chào lại tự nhiên, ấm áp, lịch sự và ngắn gọn như ChatGPT. TUYỆT ĐỐI KHÔNG tự động giới thiệu tên hay nói "tôi là khoa.ai do Khoa Dev tạo ra" trừ khi người dùng chủ động hỏi đích danh "bạn là ai?" hoặc "ai tạo ra bạn?".
+- Chỉ khi được hỏi trực tiếp về danh tính, nguồn gốc, bạn mới khẳng định mình là khoa.ai do Khoa Dev sáng lập và phát triển.
+
+2. Phong cách hành văn & Trình bày Markdown (Chuẩn ChatGPT):
+- Không lạm dụng gạch đầu dòng (-). Viết thành các đoạn văn tự nhiên, mạch lạc, kết nối ý tưởng uyển chuyển thay vì tách mỗi câu thành một gạch đầu dòng.
+- Chỉ sử dụng danh sách ngắn khi người dùng yêu cầu liệt kê các bước, hoặc khi cần trình bày cô đọng tối đa 1 danh sách trong một phản hồi.
+- Trình bày Markdown rõ ràng, chuyên nghiệp: Tiêu đề (#, ##, ###) đúng cấp bậc, đoạn văn có độ giãn cách thoáng đãng.
+- Khi người dùng cần bảng biểu (lịch trình, so sánh, kế hoạch), BẮT BUỘC dùng bảng Markdown chuẩn:
+| Tiêu đề 1 | Tiêu đề 2 | Tiêu đề 3 |
+| --- | --- | --- |
+| Dòng 1 | Nội dung | Ghi chú |
+(Lưu ý: Không bọc dấu ** ** vào từng ô trong bảng, để văn bản trong ô hiển thị tự nhiên, sạch sẽ).
+- Khối code luôn đặt trong ```ngôn_ngữ ... ```.
+
+3. Thái độ & Trí tuệ (dulieukhoaai.md):
+- Trả lời thẳng vào trọng tâm câu hỏi, không dài dòng giải thích thừa thãi hay nói các câu sáo rỗng.
+- Luôn giữ thái độ tôn trọng, tích cực, hữu ích, văn minh và an toàn tối đa cho mọi người dùng.]
 
 Người dùng: \(fullPromptPayload)
 """
@@ -401,6 +420,11 @@ Người dùng: \(fullPromptPayload)
                 }
             }
 
+            // Filter out status updates (prevents FINISHED / COMPLETED from leaking into chat)
+            if activePath.contains("status") || activePath.contains("finish_reason") {
+                continue
+            }
+
             // Case A: v is a snapshot dictionary or new fragment dictionary
             if let vDict = obj["v"] as? [String: Any] {
                 // If it contains "response", extract message_id and any initial fragments
@@ -436,12 +460,15 @@ Người dùng: \(fullPromptPayload)
 
             // Case B: v is a direct string append
             if let vStr = obj["v"] as? String, !vStr.isEmpty {
-                if activePath.contains("think") || activePath.contains("/0/") {
+                // Filter out any status values accidentally received as vStr
+                let upper = vStr.uppercased().trimmingCharacters(in: .whitespacesAndNewlines)
+                if upper == "FINISHED" || upper == "COMPLETED" || upper == "STOPPED" || upper == "DONE" {
+                    continue
+                }
+
+                if activePath.contains("think") || activePath.contains("/0/content") {
                     appendToThinking(vStr, for: aiMessageId)
-                } else if activePath.contains("content") || activePath.contains("response") || activePath.contains("/1/") || activePath.contains("/-1/") {
-                    appendToResponse(vStr, for: aiMessageId)
-                } else {
-                    // Fallback to response text
+                } else if activePath.contains("content") || activePath.contains("response") {
                     appendToResponse(vStr, for: aiMessageId)
                 }
             }

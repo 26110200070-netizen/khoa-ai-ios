@@ -442,152 +442,72 @@ struct HighlightedCodeView: View {
     }
 }
 
-// MARK: - Markdown Table View Matching Image 2 100%
-// White card with rounded corners, top header bar [ Bảng  􀉁  􀈂  􀅊 ],
-// bold first column, thin grid lines, and horizontal scrolling.
+// MARK: - Markdown Table View Matching Image 2 (ChatGPT Style 100%)
+// Clean, seamless, borderless design with thin horizontal dividers and airy row spacing.
 struct MarkdownTableView: View {
     let headers: [String]
     let rows: [[String]]
 
-    @State private var copied: Bool = false
-    @State private var showFullScreen: Bool = false
-
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            // Top Table Toolbar matching Image 2
-            HStack(spacing: 14) {
-                Text("Bảng")
-                    .font(.system(size: 13.5, weight: .regular))
-                    .foregroundStyle(Color.secondary)
-
-                Spacer()
-
-                // Action 1: Copy Table
-                Button {
-                    copyTableToClipboard()
-                } label: {
-                    Image(systemName: copied ? "checkmark" : "doc.on.doc")
-                        .font(.system(size: 13))
-                        .foregroundStyle(copied ? Color.green : Color.secondary.opacity(0.85))
+        ScrollView(.horizontal, showsIndicators: false) {
+            VStack(alignment: .leading, spacing: 0) {
+                // Header Row
+                HStack(alignment: .top, spacing: 16) {
+                    ForEach(headers.indices, id: \.self) { cIdx in
+                        Text(cleanCell(headers[cIdx]))
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundStyle(Color.black.opacity(0.9))
+                            .frame(minWidth: columnMinWidth(for: cIdx), alignment: .leading)
+                    }
                 }
+                .padding(.vertical, 10)
+                .padding(.horizontal, 2)
 
-                // Action 2: Download / Save icon
-                Button {
-                    copyTableToClipboard()
-                } label: {
-                    Image(systemName: "arrow.down.to.line")
-                        .font(.system(size: 13))
-                        .foregroundStyle(Color.secondary.opacity(0.85))
-                }
+                Divider()
+                    .background(Color.black.opacity(0.12))
 
-                // Action 3: Expand icon
-                Button {
-                    showFullScreen.toggle()
-                } label: {
-                    Image(systemName: "arrow.up.left.and.arrow.down.right")
-                        .font(.system(size: 12.5))
-                        .foregroundStyle(Color.secondary.opacity(0.85))
-                }
-            }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 10)
-            .background(Color.white)
-
-            Divider()
-                .background(Color.black.opacity(0.08))
-
-            // Scrollable Table Grid
-            ScrollView(.horizontal, showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 0) {
-                    // Header Row
-                    HStack(spacing: 0) {
+                // Data Rows
+                ForEach(rows.indices, id: \.self) { rIdx in
+                    let row = rows[rIdx]
+                    HStack(alignment: .top, spacing: 16) {
                         ForEach(headers.indices, id: \.self) { cIdx in
-                            Text(LocalizedStringKey(headers[cIdx]))
-                                .font(.system(size: 14, weight: .bold))
-                                .foregroundStyle(Color.black.opacity(0.92))
-                                .padding(.horizontal, 14)
-                                .padding(.vertical, 10)
+                            let rawCell = cIdx < row.count ? row[cIdx] : ""
+                            Text(cleanCell(rawCell))
+                                .font(.system(size: 14.5, weight: .regular))
+                                .foregroundStyle(Color.black.opacity(0.86))
+                                .lineSpacing(3)
                                 .frame(minWidth: columnMinWidth(for: cIdx), alignment: .leading)
-
-                            if cIdx < headers.count - 1 {
-                                Rectangle()
-                                    .fill(Color.black.opacity(0.08))
-                                    .frame(width: 1)
-                            }
                         }
                     }
-                    .background(Color.white)
+                    .padding(.vertical, 12)
+                    .padding(.horizontal, 2)
 
-                    Divider()
-                        .background(Color.black.opacity(0.08))
-
-                    // Data Rows
-                    ForEach(rows.indices, id: \.self) { rIdx in
-                        let row = rows[rIdx]
-                        HStack(spacing: 0) {
-                            ForEach(headers.indices, id: \.self) { cIdx in
-                                let rawCell = cIdx < row.count ? row[cIdx] : ""
-                                // Clean ** from cell if already bolded, or let LocalizedStringKey parse **bold** natively
-                                let cellKey: LocalizedStringKey = LocalizedStringKey(
-                                    cIdx == 0 && !rawCell.contains("**") ? "**\(rawCell)**" : rawCell
-                                )
-
-                                Text(cellKey)
-                                    .font(.system(size: 13.5, weight: cIdx == 0 ? .bold : .regular))
-                                    .foregroundStyle(Color.black.opacity(0.9))
-                                    .padding(.horizontal, 14)
-                                    .padding(.vertical, 10)
-                                    .frame(minWidth: columnMinWidth(for: cIdx), alignment: .leading)
-
-                                if cIdx < headers.count - 1 {
-                                    Rectangle()
-                                        .fill(Color.black.opacity(0.08))
-                                        .frame(width: 1)
-                                }
-                            }
-                        }
-                        .background(rIdx % 2 == 1 ? Color(.systemGray6).opacity(0.2) : Color.white)
-
-                        if rIdx < rows.count - 1 {
-                            Divider()
-                                .background(Color.black.opacity(0.08))
-                        }
+                    if rIdx < rows.count - 1 {
+                        Divider()
+                            .background(Color.black.opacity(0.06))
                     }
                 }
             }
         }
-        .background(Color.white)
-        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .strokeBorder(Color.black.opacity(0.12), lineWidth: 1)
-        )
-        .shadow(color: Color.black.opacity(0.03), radius: 6, x: 0, y: 2)
         .padding(.vertical, 6)
     }
 
     private func columnMinWidth(for colIndex: Int) -> CGFloat {
         if colIndex == 0 {
-            return 95
+            return 85
         } else if colIndex == 1 {
-            return 115
+            return 125
         } else {
-            return 140
+            return 115
         }
     }
 
-    private func copyTableToClipboard() {
-        var tsv = headers.joined(separator: "\t") + "\n"
-        for row in rows {
-            tsv += row.joined(separator: "\t") + "\n"
-        }
-        UIPasteboard.general.string = tsv
-        let haptic = UIImpactFeedbackGenerator(style: .light)
-        haptic.impactOccurred()
-        withAnimation { copied = true }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.8) {
-            withAnimation { copied = false }
-        }
+    private func cleanCell(_ text: String) -> String {
+        return text
+            .replacingOccurrences(of: "**", with: "")
+            .replacingOccurrences(of: "*", with: "")
+            .replacingOccurrences(of: "`", with: "")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
     }
 }
 
