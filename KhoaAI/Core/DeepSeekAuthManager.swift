@@ -22,6 +22,10 @@ public struct DeepSeekSession: Codable {
         return (Date().timeIntervalSince1970 - capturedAt) > (24 * 3600)
     }
 
+    public var isValid: Bool {
+        return !token.isEmpty && !isExpired
+    }
+
     public var cookieHeader: String {
         return cookies.map { "\($0.key)=\($0.value)" }.joined(separator: "; ")
     }
@@ -34,6 +38,7 @@ public class DeepSeekAuthManager: ObservableObject {
     private let storageKey = "khoa_ai_deepseek_session_v2"
 
     @Published public var session: DeepSeekSession?
+    public var currentSession: DeepSeekSession? { session }
     @Published public var isAuthenticated: Bool = false
     @Published public var isMuted: Bool = false
     @Published public var userEmail: String = ""

@@ -20,7 +20,8 @@ public struct ChatMessage: Identifiable, Codable, Equatable {
     public let isUser: Bool
     public var isThinking: Bool
     public var isStreaming: Bool
-    public var timestamp: Date
+    public var date: Date
+    public var timestamp: Date { date }
     public var imageData: Data?
 
     public init(
@@ -30,7 +31,7 @@ public struct ChatMessage: Identifiable, Codable, Equatable {
         isUser: Bool,
         isThinking: Bool = false,
         isStreaming: Bool = false,
-        timestamp: Date = Date(),
+        date: Date = Date(),
         image: UIImage? = nil
     ) {
         self.id = id
@@ -39,7 +40,7 @@ public struct ChatMessage: Identifiable, Codable, Equatable {
         self.isUser = isUser
         self.isThinking = isThinking
         self.isStreaming = isStreaming
-        self.timestamp = timestamp
+        self.date = date
         self.imageData = image?.jpegData(compressionQuality: 0.8)
     }
 
@@ -82,7 +83,15 @@ public final class DeepSeekService: ObservableObject {
 
     public func loadSessionMessages(_ session: ConversationSession) {
         self.activeChatSessionId = session.id
-        self.messages = session.messages
+        self.messages = session.messages.map { saved in
+            ChatMessage(
+                id: saved.id,
+                text: saved.text,
+                thinkingText: saved.thinkingText,
+                isUser: saved.isUser,
+                date: saved.date
+            )
+        }
         self.selectedModel = session.model
         self.messagesInCurrentSession = session.messages.count
         self.errorMessage = nil
