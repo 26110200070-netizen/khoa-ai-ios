@@ -1,0 +1,75 @@
+name: Build Khoa.AI iOS IPA
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: macos-14
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Show Xcode version
+        run: |
+          xcodebuild -version
+          swift --version
+
+      - name: Build Archive (Unsigned)
+        run: |
+          set -o pipefail
+          xcodebuild -project KhoaAI.xcodeproj \
+            -scheme KhoaAI \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath build/KhoaAI.xcarchive \
+            archive \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY=""
+
+      - name: Package Unsigned IPA for ESign
+        run: |
+          mkdir -p Payload
+          cp -r build/KhoaAI.xcarchive/Products/Applications/KhoaAI.app Payload/
+          zip -r -y khoa_ai.ipa Payload
+          ls -lh khoa_ai.ipa
+
+      - name: Upload IPA Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: khoa_ai_unsigned_ipa
+          path: khoa_ai.ipa
+          retention-days: 30
+
+      - name: Create GitHub Release with direct IPA download
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/heads/main') || startsWith(github.ref, 'refs/heads/master') || github.event_name == 'workflow_dispatch'
+        with:
+          tag_name: v1.0.0
+          name: "khoa.ai iOS v1.0.0 (Unsigned IPA)"
+          body: |
+            ### 🏜️ khoa.ai - Ứng dụng iOS AI Chat phong cách Liquid Glass
+            Được phát triển bởi **Khoa Dev**.
+            
+            - **Giao diện**: Chuẩn Liquid Glass kết hợp chủ đề Sa Mạc & AI.
+            - **Tính năng**:
+              - Chat trực tiếp với tài khoản DeepSeek cá nhân không mất phí API.
+              - Đăng nhập Safari WebKit nội bộ an toàn, tự động vượt AWS WAF.
+              - Lá chắn chống khóa/mute tài khoản: pacing gửi tin người dùng, tái sử dụng phiên tự nhiên, headers chuẩn thiết bị di động.
+              - Giải Proof-of-Work (PoW) `DeepSeekHashV1` trực tiếp trên máy bằng WebAssembly cực nhanh (150ms).
+              - Hỗ trợ xem suy nghĩ (DeepThink) và tìm kiếm web (Web Search).
+              - Tin nhắn AI tự do không bị đóng hộp, chữ tràn viền đọc mượt mà.
+            
+            #### 📱 Hướng dẫn cài đặt qua ESign:
+            1. Tải file `khoa_ai.ipa` đính kèm bên dưới về iPhone.
+            2. Mở ứng dụng **ESign** trên máy.
+            3. Chọn file `khoa_ai.ipa`, chọn chứng chỉ ký của bạn (hoặc chứng chỉ doanh nghiệp/chứng chỉ tự ký) và nhấn **Sign & Install**.
+          files: khoa_ai.ipa
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
